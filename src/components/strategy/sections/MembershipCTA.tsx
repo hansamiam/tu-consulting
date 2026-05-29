@@ -122,11 +122,10 @@ export const MembershipCTA = ({ language }: Props) => {
     }
   };
 
-  // 2026-05-30 — shortened. "Claim 50% Off — Join Top Uni" read long
-  // and salesy next to the new launch-discount inline pricing.
-  const ctaLabel = stillOpen
-    ? t(language, "Join Top Uni", "Вступить в Top Uni")
-    : t(language, "Join Top Uni", "Вступить в Top Uni");
+  // 2026-05-30 — single locked label "Become a member". Matches the
+  // Discover sidebar + scholarship-detail card convention so users see
+  // one phrase for the conversion ask across the whole product.
+  const ctaLabel = t(language, "Become a member", "Стать участником");
 
   return (
     <>
@@ -154,26 +153,21 @@ export const MembershipCTA = ({ language }: Props) => {
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="min-w-0">
+              {/* 2026-05-30 — drop "Launch discount — first 50." subline +
+                  founding-counter scarcity row. NURZADA50 is the actual
+                  50% code for Nurzada's audience (separate distribution).
+                  The general early-launch discount is purely the visual
+                  $39.99 → $29.99 crossed-out effect. */}
               <p className="text-[12.5px] leading-[1.45] text-foreground/85 m-0">
                 {stillOpen ? (
                   <>
                     <span className="text-foreground/45 line-through mr-1.5">{STANDARD_PRICE}</span>
-                    <span className="font-semibold">{LAUNCH_PRICE} / {t(language, "month", "месяц")}.</span>{" "}
-                    <span className="text-foreground/60">
-                      {t(language, "Launch discount — first 50.", "Запуск — для первых 50.")}
-                    </span>
+                    <span className="font-semibold">{LAUNCH_PRICE} / {t(language, "month", "месяц")}.</span>
                   </>
                 ) : (
                   <span className="font-semibold">{STANDARD_PRICE} / {t(language, "month", "месяц")}.</span>
                 )}
               </p>
-              {stillOpen && (
-                <p className="text-[10.5px] text-gold-dark font-semibold m-0 mt-0.5 uppercase tracking-[0.14em]">
-                  {language === "ru"
-                    ? `Осталось ${foundingLeft} из ${foundingCap}`
-                    : `${foundingLeft} of ${foundingCap} spots left`}
-                </p>
-              )}
             </div>
             <Button
               onClick={startCheckout}

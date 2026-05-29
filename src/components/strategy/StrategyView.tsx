@@ -56,12 +56,14 @@ export const StrategyView = ({ profile, language }: Props) => {
         const json = (await resp.json()) as StrategyApiResponse;
         if (!cancelled) {
           setReport(json.report);
-          // Trigger the reveal animation. Loading false ⇒ pipeline
-          // unmounts; revealing true ⇒ reveal frame mounts in its place
-          // for ~750ms before the actual dossier slides in.
+          // 2026-05-30 — reveal window bumped to 2.2s. Samuel reported
+          // not seeing the animation; 750ms reads as a flicker rather
+          // than a moment. The new sequence has 4 staged elements
+          // (envelope glow → eyebrow → headline → arrow) spread across
+          // the window so the user actually registers it.
           setLoading(false);
           setRevealing(true);
-          setTimeout(() => { if (!cancelled) setRevealing(false); }, 750);
+          setTimeout(() => { if (!cancelled) setRevealing(false); }, 2200);
         }
       } catch (e) {
         if (!cancelled) {
@@ -110,29 +112,78 @@ export const StrategyView = ({ profile, language }: Props) => {
             {!loading && revealing && (
               <motion.div
                 key="reveal"
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                className="min-h-screen flex items-center justify-center px-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="min-h-screen flex items-center justify-center px-4 relative"
               >
-                <div className="text-center">
+                {/* Soft radiating glow behind the headline — telegraphs
+                    "something is opening" without an explicit envelope
+                    illustration. Pulses once then settles. */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none flex items-center justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 0.6] }}
+                  transition={{ duration: 1.6, times: [0, 0.45, 1], ease: "easeOut" }}
+                  aria-hidden
+                >
+                  <div className="h-[420px] w-[420px] sm:h-[600px] sm:w-[600px] rounded-full bg-gradient-to-br from-gold/35 via-gold/10 to-transparent blur-3xl" />
+                </motion.div>
+
+                <div className="text-center relative z-10 max-w-lg">
                   <motion.div
-                    initial={{ scale: 0.7, opacity: 0 }}
+                    initial={{ scale: 0.6, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    className="inline-block px-5 py-2 rounded-full border border-gold/40 bg-gold/10 text-[11px] uppercase tracking-[0.22em] font-bold text-gold-dark mb-5"
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    className="inline-block px-5 py-2 rounded-full border border-gold/50 bg-gold/15 text-[11px] uppercase tracking-[0.22em] font-bold text-gold-dark mb-6 shadow-sm"
                   >
                     {t(language, "Strategy ready", "Стратегия готова")}
                   </motion.div>
                   <motion.h2
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                    className="font-heading text-[28px] sm:text-[36px] font-bold tracking-tight text-foreground"
+                    transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    className="font-heading text-[32px] sm:text-[42px] font-bold tracking-tight text-foreground leading-[1.1] mb-4"
                   >
                     {t(language, "Opening your dossier…", "Открываем твой dossier…")}
                   </motion.h2>
+                  {/* 2026-05-30 — third staged element: a short body line +
+                      a slow-rising arrow indicate the user should expect
+                      the page to scroll/transition. Fills the back half
+                      of the 2.2s window so the moment doesn't feel front-
+                      loaded. */}
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.9, ease: "easeOut" }}
+                    className="text-[14px] leading-[1.55] text-foreground/65 m-0 mb-7"
+                  >
+                    {t(
+                      language,
+                      "Your honest diagnosis, your edge, your blindspot, and your next move.",
+                      "Честный диагноз, твоё преимущество, слепое пятно и следующий шаг.",
+                    )}
+                  </motion.p>
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 8 }}
+                    transition={{ duration: 0.9, delay: 1.2, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-gold/40 bg-gold/10"
+                    aria-hidden
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-4 h-4 text-gold-dark"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 5v14M5 12l7 7 7-7" />
+                    </svg>
+                  </motion.div>
                 </div>
               </motion.div>
             )}
