@@ -27,16 +27,23 @@ export const OTHER_TOKEN = "__other__";
  *  appended in the wizard JSX so the typeahead trigger is part of the
  *  chip row). Order is curated: aspirational + accessible mixed. */
 export const COUNTRY_DEFAULT_CHIPS: string[] = [
+  // 2026-05-30 default-chip audit — swapped 3 chips per Samuel:
+  //   Netherlands → Czech Republic (closer to Top Uni's CIS / budget-EU
+  //     positioning; Netherlands skewed Anglo-aspirational)
+  //   Australia   → Japan          (real far-east aspirational track
+  //     with strong scholarship infra)
+  //   Singapore   → Poland         (regional cousin of Hungary; cheap
+  //     EU degree path most students don't know about)
   "USA",
   "UK",
   "Canada",
   "Germany",
-  "Netherlands",
+  "Czech Republic",
   "South Korea",
-  "Singapore",
+  "Poland",
   "Hungary",
   "Türkiye",
-  "Australia",
+  "Japan",
   "China",
 ];
 

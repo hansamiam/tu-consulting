@@ -1654,7 +1654,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Narrative", "Нарратив")}</span>
                       </div>
                       <h2 className="font-heading text-[28px] sm:text-[40px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
-                        {t("What's the story?", "В чём твоя история?")}
+                        {t("What's your story?", "В чём твоя история?")}
                       </h2>
                     </div>
 
@@ -1971,8 +1971,17 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         intentionally include Hungary / Türkiye / China to
                         teach Top Uni's anti-Crimson positioning. */}
                     <div className="pt-2">
-                      <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do you want to study?", "Куда хочешь поступать?")}</Label>
-                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t(`Pick up to ${COUNTRY_PICK_CAP} — optional.`, `Выбери до ${COUNTRY_PICK_CAP} — по желанию.`)}</p>
+                      <Label className="text-xs uppercase tracking-wider font-medium">
+                        {t("Where do you want to study?", "Куда хочешь поступать?")}{" "}
+                        <span className="text-rose-500 font-bold ml-0.5">*</span>
+                      </Label>
+                      {/* 2026-05-30 — made required. Empty targetCountries
+                          fed Card 02 ("Where you belong") with no anchor
+                          and the LLM either invented or fell back to
+                          "Open" — strategy quality cratered. Still cap=3
+                          so the dossier stays comparative without going
+                          5-country-pile-on. */}
+                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t(`Pick 1–${COUNTRY_PICK_CAP}.`, `Выбери 1–${COUNTRY_PICK_CAP}.`)}</p>
                       <div className="flex flex-wrap gap-2">
                         {[...COUNTRY_DEFAULT_CHIPS, OTHER_TOKEN].map((token) => {
                           const isOther = token === OTHER_TOKEN;
@@ -2310,7 +2319,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                             variant="gold"
                             size="lg"
                             onClick={onGenerate}
-                            disabled={!major.trim() || !timeline.trim()}
+                            disabled={!major.trim() || !timeline.trim() || targetCountries.length === 0}
                           >
                             {t("Give me my strategy", "Дай мне стратегию")}
                             <ArrowRight className="ml-2 w-5 h-5" />
