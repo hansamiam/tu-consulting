@@ -794,7 +794,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     languages moved from Scores → You step in the same
                     pass (it's identity context, not a test score). */}
                 {[
-                  { n: 1, label: t("You", "О тебе") },
+                  { n: 1, label: t("You", "О вас") },
                   { n: 2, label: t("Academics", "Академика") },
                   { n: 3, label: t("Goals", "Цели") },
                 ].map(s => {
@@ -894,7 +894,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">{t("Full name *", "Полное имя *")}</Label>
-                          <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("What should we call you?", "Как тебя зовут?")} className="h-11 bg-card" />
+                          <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("What should we call you?", "Как вас зовут?")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do we send your strategy?", "Куда отправить твою стратегию?")} <span className="text-rose-600 font-bold">*</span></Label>
@@ -905,7 +905,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {/* WhatsApp field retired — never used by the
                             brief generator and the extra "give us your
                             phone" ask was friction with no payoff. */}
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Where are you from?", "Откуда ты?")} <span className="text-rose-600 font-bold">*</span></Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Where are you from?", "Откуда вы?")} <span className="text-rose-600 font-bold">*</span></Label>
                         <Input
                           value={nationality}
                           onChange={e => setNationality(e.target.value)}
@@ -937,7 +937,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         })()}
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Degree you're applying for", "На какую степень поступаешь")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("Degree you're applying for", "На какую степень поступаете")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                         <Select value={gradeLevel} onValueChange={setGradeLevel}>
                           <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Pick your target degree", "Выбери целевую степень")} /></SelectTrigger>
                           <SelectContent>
@@ -1110,7 +1110,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {t("How does your academic record look?", "Как выглядит твоя успеваемость?")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[50ch]">
-                        {t("Skip the tests you haven't taken.", "Пропускай тесты, которые не сдавал.")}
+                        {t("Skip the tests you haven't taken.", "Пропускайте тесты, которые не сдавали.")}
                       </p>
                     </div>
                     <div className="grid gap-5">
@@ -1119,7 +1119,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           to it, per Samuel 2026-05-29 polish pass. */}
                       <div className="space-y-2">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у тебя средний балл?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у вас средний балл?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                           {/* Paired input + scale picker — covers the four
                               common bases (US 4.0, post-Soviet 5.0,
                               Continental Europe 10.0, percentage 100) so
@@ -1274,7 +1274,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           <div key={key} className="space-y-2 rounded-lg border border-border/70 bg-card p-3.5">
                             <Label className="text-xs uppercase tracking-wider font-medium block">
                               {label} <span className="text-muted-foreground/70 font-normal normal-case">{scale}</span>
-                              <span className="text-muted-foreground/60 font-normal normal-case ml-1">·  {t("leave blank if not taken", "оставь пустым если не сдавал")}</span>
+                              <span className="text-muted-foreground/60 font-normal normal-case ml-1">·  {t("leave blank if not taken", "оставьте пустым, если не сдавали")}</span>
                             </Label>
                             <Input
                               value={value}
@@ -1432,7 +1432,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         {t("Pick your direction.", "Выбери направление.")}
                       </h2>
                       <p className="text-foreground/65 mt-3 text-[14.5px] leading-relaxed max-w-[52ch]">
-                        {t("Field, timeline, and what matters to you.", "Область, сроки и что для тебя важно.")}
+                        {t("Field, timeline, and what matters to you.", "Область, сроки и что для вас важно.")}
                       </p>
                     </div>
                     <div className="space-y-6">
@@ -1454,7 +1454,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           a specialty not in the canonical list (e.g.
                           "Quantum Biophysics") aren't blocked. */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you want to study?", "Что ты хочешь изучать?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
+                        <Label className="text-xs uppercase tracking-wider font-medium">{t("What do you want to study?", "Что вы хотите изучать?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                         {(() => {
                           // Alphabetical so a 38-item dropdown is scannable.
                           // Previous order was clustered by domain (STEM →
@@ -1531,7 +1531,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         intentionally include Hungary / Türkiye / China to
                         teach Top Uni's anti-Crimson positioning. */}
                     <div className="pt-2">
-                      <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do you want to study?", "Куда хочешь поступать?")}</Label>
+                      <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do you want to study?", "Куда хотите поступать?")}</Label>
                       <p className="text-muted-foreground text-xs mt-1 mb-3">{t(`Pick up to ${COUNTRY_PICK_CAP} — optional.`, `Выбери до ${COUNTRY_PICK_CAP} — по желанию.`)}</p>
                       <div className="flex flex-wrap gap-2">
                         {[...COUNTRY_DEFAULT_CHIPS, OTHER_TOKEN].map((token) => {
@@ -1643,7 +1643,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         consulting platform asks this at intake. */}
                     <div className="pt-2">
                       <Label className="text-xs uppercase tracking-wider font-medium">{t("Any scholarships on your radar?", "Какие стипендии уже на радаре?")}</Label>
-                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Pick any you've heard of — optional.", "Отметь, о каких ты слышал(а) — по желанию.")}</p>
+                      <p className="text-muted-foreground text-xs mt-1 mb-3">{t("Pick any you've heard of — optional.", "Отметьте, о каких слышали — по желанию.")}</p>
                       <div className="flex flex-wrap gap-2">
                         {KNOWN_SCHOLARSHIP_CHIPS.map((c) => {
                           const selected = knownScholarships.includes(c.token);
@@ -1679,7 +1679,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         need; now an inline row per priority with the
                         same controls but tighter vertical rhythm. */}
                     <div className="pt-2">
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark/80 font-medium mb-3">{t("What matters to you", "Что важно для тебя")}</p>
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-gold-dark/80 font-medium mb-3">{t("What matters to you", "Что важно для вас")}</p>
                       <div className="space-y-3.5">
                         {[
                           { label: t("Prestige", "Престиж"), value: prestige, set: setPrestige, icon: GraduationCap, low: t("Any school", "Любой вуз"), high: t("Top 50 only", "Только топ-50") },
@@ -1753,7 +1753,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
 
                     <div className="space-y-5">
                       <div className="space-y-1.5">
-                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Who do you want to be?", "Кем ты хочешь стать?")}</Label>
+                        <Label htmlFor="careerGoal" className="text-xs uppercase tracking-wider font-medium">{t("Who do you want to be?", "Кем вы хотите стать?")}</Label>
                         <Textarea
                           id="careerGoal"
                           placeholder={t(
