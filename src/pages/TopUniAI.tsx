@@ -170,6 +170,19 @@ interface WizardDraft {
    *  narrative anchor for applicants without much else to grab. */
   curriculumType?: "ap" | "ib" | "national" | "other";
   favoriteSubject?: string;
+  /** 2026-05-30 v3 — grad-only Narrative additions (cofounder spec).
+   *  A Master's / PhD strategy hinges on whether the applicant is
+   *  doubling down on their undergrad field, pivoting to an adjacent
+   *  one, or jumping into a new domain. previousMajor + fieldContinuity
+   *  + fieldBridge let the LLM read pivot viability instead of
+   *  guessing from major alone.
+   *
+   *    previousMajor   — free text, what they studied (degree + major)
+   *    fieldContinuity — closed-set verdict on relationship to target
+   *    fieldBridge     — optional connective tissue when pivoting */
+  previousMajor?: string;
+  fieldContinuity?: "same" | "related" | "different";
+  fieldBridge?: string;
   /** 2026-05-29 v2 — English Proficiency captured via test+score on
    *  Step 1 (replaces the old 5-chip MC). The user picks the test they
    *  took (IELTS / TOEFL / Other / Not yet); for IELTS/TOEFL they enter
@@ -593,6 +606,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const [activity1Leadership, setActivity1Leadership] = useState<"yes" | "no" | undefined>(draft?.activity1Leadership);
   const [activity2Leadership, setActivity2Leadership] = useState<"yes" | "no" | undefined>(draft?.activity2Leadership);
   const [activity3Leadership, setActivity3Leadership] = useState<"yes" | "no" | undefined>(draft?.activity3Leadership);
+  // 2026-05-30 v3 — grad-only Narrative state per cofounder spec.
+  const [previousMajor, setPreviousMajor] = useState<string>(draft?.previousMajor ?? "");
+  const [fieldContinuity, setFieldContinuity] = useState<WizardDraft["fieldContinuity"]>(draft?.fieldContinuity);
+  const [fieldBridge, setFieldBridge] = useState<string>(draft?.fieldBridge ?? "");
 
   const [careerGoal, setCareerGoal] = useState<string>(draft?.careerGoal ?? "");
   const [extracurriculars, setExtracurriculars] = useState<string>(draft?.extracurriculars ?? "");
@@ -718,6 +735,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
         englishProficiency,
         englishTestKind, englishOtherNote: englishOtherNote || undefined,
         quantBackground, workExperience, researchExperience, hasLeadership,
+        // 2026-05-30 v3 grad-only Narrative state.
+        previousMajor: previousMajor || undefined,
+        fieldContinuity, fieldBridge: fieldBridge || undefined,
         // 2026-05-26 — per-test taken/not-yet chip state. Persisted so a
         // page refresh keeps the user's answer rather than resetting to
         // "unspecified" + an empty score input.
@@ -737,6 +757,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     foreignLanguages, firstToApplyAbroad, selectedECTags, knownScholarships,
     quantBackground, workExperience, researchExperience, hasLeadership,
     englishProficiency, englishTestKind, englishOtherNote,
+    previousMajor, fieldContinuity, fieldBridge,
     ieltsState, toeflState, satState,
     greState, gmatState, gre, gmat,
   ]);
@@ -769,6 +790,9 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
     // school") instead of just a bucketed label.
     englishTestKind, englishOtherNote,
     quantBackground, workExperience, researchExperience, hasLeadership,
+    // 2026-05-30 v3 — grad-only Narrative additions (cofounder spec).
+    // Drives the LLM's pivot-vs-deepen read for Master's / PhD.
+    previousMajor, fieldContinuity, fieldBridge,
   };
 
   return (
@@ -1627,6 +1651,91 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     </div>
 
                     <div className="space-y-6">
+                      {/* 2026-05-30 v3 — grad-only Narrative additions
+                          (cofounder spec). previousMajor + fieldContinuity
+                          + fieldBridge drive the LLM's pivot-vs-deepen
+                          read. Without these, the strategy report can't
+                          tell apart "BSc Econ → MSc Econ" (deepen play)
+                          from "BA PoliSci → MSc Econ" (pivot play with
+                          credit-gap risk). Grad applicants only — bachelor
+                          applicants don't have a previous degree to anchor. */}
+                      {isGraduateApp && (
+                        <div className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="previousMajor" className="text-xs uppercase tracking-wider font-medium">
+                              {t("What did you study before?", "Что ты изучал(а) раньше?")}
+                            </Label>
+                            <p className="text-[12px] text-muted-foreground -mt-0.5">
+                              {t(
+                                "Your current or most recent degree + major. Add concentration if it changes the read.",
+                                "Твоя текущая или последняя степень + специальность. Добавь концентрацию, если это важно.",
+                              )}
+                            </p>
+                            <Input
+                              id="previousMajor"
+                              value={previousMajor}
+                              onChange={e => setPreviousMajor(e.target.value)}
+                              placeholder={t(
+                                "e.g. BSc Economics · BA Political Science (IR concentration)",
+                                "напр. BSc Экономика · BA Политология (концентрация: МО)",
+                              )}
+                              className="h-11 bg-card"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-wider font-medium block">
+                              {t("Is your target field the same as your background?", "Целевая область та же, что и бэкграунд?")}
+                            </Label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([
+                                ["same",      t("Same field",              "Та же область")],
+                                ["related",   t("Related / adjacent",      "Смежная")],
+                                ["different", t("Different field (pivot)", "Другая (пивот)")],
+                              ] as const).map(([val, label]) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => setFieldContinuity(fieldContinuity === val ? undefined : val)}
+                                  aria-pressed={fieldContinuity === val}
+                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                    fieldContinuity === val
+                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {(fieldContinuity === "related" || fieldContinuity === "different") && (
+                            <div className="space-y-1.5">
+                              <Label htmlFor="fieldBridge" className="text-xs uppercase tracking-wider font-medium">
+                                {t("How do you bridge the two?", "Что связывает твой бэкграунд и цель?")}
+                              </Label>
+                              <p className="text-[12px] text-muted-foreground -mt-0.5">
+                                {t(
+                                  "Coursework, research, work, projects — anything connecting your background to the new field.",
+                                  "Курсы, исследования, работа, проекты — всё, что связывает прошлый опыт и новую область.",
+                                )}
+                              </p>
+                              <Textarea
+                                id="fieldBridge"
+                                value={fieldBridge}
+                                onChange={e => setFieldBridge(e.target.value)}
+                                placeholder={t(
+                                  "e.g. RA for an econ professor on inequality data · 18 credits of intermediate macro · 2 years at a fintech startup",
+                                  "напр. RA у профессора по экономике · 18 кредитов macro · 2 года в финтех-стартапе",
+                                )}
+                                className="min-h-[64px] resize-none bg-card"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="space-y-3">
                         <Label className="text-xs uppercase tracking-wider font-medium">
                           {isGraduateApp
@@ -1636,8 +1745,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         <p className="text-[12px] text-muted-foreground -mt-1">
                           {isGraduateApp
                             ? t(
-                                "The work / research / projects that shaped you most. Mark which you led.",
-                                "Работа / исследования / проекты, которые определили тебя. Отметь, где был(а) лидером.",
+                                "The work / research / projects that shaped you most.",
+                                "Работа / исследования / проекты, которые определили тебя.",
                               )
                             : t(
                                 "Clubs, sports, jobs, side projects — anything you spent real time on. Mark which you led.",
@@ -1649,7 +1758,17 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           { n: 2, val: activity2, set: setActivity2, lead: activity2Leadership, setLead: setActivity2Leadership },
                           { n: 3, val: activity3, set: setActivity3, lead: activity3Leadership, setLead: setActivity3Leadership },
                         ] as const).map(({ n, val, set, lead, setLead }) => (
-                          <div key={n} className="grid grid-cols-[28px_1fr_auto] gap-3 items-start">
+                          // 2026-05-30 v3 — grad applicants drop the per-row
+                          // Led toggle (per cofounder direction; leadership
+                          // signal lives on Step 2 work-experience chip for
+                          // them). Bachelor applicants keep it as the highest-
+                          // signal narrative differentiator for undergrad ECs.
+                          <div
+                            key={n}
+                            className={`grid gap-3 items-start ${
+                              isGraduateApp ? "grid-cols-[28px_1fr]" : "grid-cols-[28px_1fr_auto]"
+                            }`}
+                          >
                             <span className="font-heading text-[18px] font-bold text-gold-dark tabular-nums leading-[2.2]">
                               {n}.
                             </span>
@@ -1677,29 +1796,31 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               }
                               className="h-11 bg-card"
                             />
-                            <div className="flex items-center gap-1.5 pt-1.5">
-                              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 mr-1">
-                                {t("Led", "Лидер")}
-                              </span>
-                              {([
-                                ["yes", t("Yes", "Да")],
-                                ["no",  t("No",  "Нет")],
-                              ] as const).map(([v, lbl]) => (
-                                <button
-                                  key={v}
-                                  type="button"
-                                  onClick={() => setLead(lead === v ? undefined : v)}
-                                  aria-pressed={lead === v}
-                                  className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-all ${
-                                    lead === v
-                                      ? "bg-gold/15 text-gold-dark border-gold"
-                                      : "bg-background text-foreground/60 border-border/70 hover:border-gold-dark/60"
-                                  }`}
-                                >
-                                  {lbl}
-                                </button>
-                              ))}
-                            </div>
+                            {!isGraduateApp && (
+                              <div className="flex items-center gap-1.5 pt-1.5">
+                                <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 mr-1">
+                                  {t("Led", "Лидер")}
+                                </span>
+                                {([
+                                  ["yes", t("Yes", "Да")],
+                                  ["no",  t("No",  "Нет")],
+                                ] as const).map(([v, lbl]) => (
+                                  <button
+                                    key={v}
+                                    type="button"
+                                    onClick={() => setLead(lead === v ? undefined : v)}
+                                    aria-pressed={lead === v}
+                                    className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-all ${
+                                      lead === v
+                                        ? "bg-gold/15 text-gold-dark border-gold"
+                                        : "bg-background text-foreground/60 border-border/70 hover:border-gold-dark/60"
+                                    }`}
+                                  >
+                                    {lbl}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

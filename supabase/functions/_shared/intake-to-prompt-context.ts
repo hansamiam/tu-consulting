@@ -64,6 +64,24 @@ export interface PromptContext {
    *  leadership for narrative differentiation. */
   hasLeadership?: "yes" | "no";
 
+  /** 2026-05-30 v3 grad-only Narrative additions (cofounder spec).
+   *  Together these let the prompt decide between deepen-play and
+   *  pivot-play. Critical for Master's / PhD strategy quality:
+   *  the LLM should read previousMajor + fieldContinuity + fieldBridge
+   *  ALONGSIDE the target major (fieldOfStudy) and tailor the diagnosis.
+   *  When fieldContinuity === "same", the strategy emphasizes evidence
+   *  of depth (research, publications, applied projects). When "related"
+   *  or "different", it emphasizes the bridge — coursework, RA stints,
+   *  applied projects that prove the pivot is grounded.
+   *
+   *  previousMajor    — raw text the user provided ("BSc Economics",
+   *                     "BA Political Science (IR concentration)")
+   *  fieldContinuity  — closed-set verdict for fast routing
+   *  fieldBridge      — optional connective tissue when pivoting */
+  previousMajor?: string;
+  fieldContinuity?: "same" | "related" | "different";
+  fieldBridge?: string;
+
   /** Free-text background blob (Sharpen-step). Trimmed. */
   background?: string;
   /** Named schools blob (Sharpen-step). Trimmed. */
@@ -258,6 +276,14 @@ export function projectIntake(profile: any, language: Language): PromptContext {
       ? profile.researchExperience : undefined,
     hasLeadership: ["yes", "no"].includes(profile.hasLeadership)
       ? profile.hasLeadership : undefined,
+    // 2026-05-30 v3 grad-only Narrative fields. The LLM needs all three
+    // when fieldContinuity !== "same" — bridge is what makes a pivot
+    // credible. previousMajor is bounded to 200 chars to keep the prompt
+    // disciplined; fieldBridge to 400.
+    previousMajor: (profile.previousMajor || "").trim().slice(0, 200) || undefined,
+    fieldContinuity: ["same", "related", "different"].includes(profile.fieldContinuity)
+      ? profile.fieldContinuity : undefined,
+    fieldBridge: (profile.fieldBridge || "").trim().slice(0, 400) || undefined,
     background: (profile.background || "").trim().slice(0, 600) || undefined,
     namedSchools: (profile.namedSchools || "").trim().slice(0, 400) || undefined,
     foreignLanguages: Array.isArray(profile.foreignLanguages) && profile.foreignLanguages.length
