@@ -17,7 +17,10 @@ import { AuthDialog } from "@/components/auth/AuthDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { MembershipSettings } from "@/components/pipeline/MembershipSettings";
 import { ProfileSettingsCard } from "@/components/account/ProfileSettingsCard";
-import { Loader2 } from "lucide-react";
+import { FirstWeekActivationCard } from "@/components/account/FirstWeekActivationCard";
+import { WorkshopQuestionForm } from "@/components/account/WorkshopQuestionForm";
+import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
+import { Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 interface AccountProps { language?: "en" | "ru"; }
@@ -28,6 +31,11 @@ const Account = ({ language = "en" }: AccountProps) => {
   const navigate = useNavigate();
   const { user, loading, refreshSubscription } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  // Captures whether the page was loaded via the Stripe-success redirect.
+  // The side effect below clears ?subscribed=1 from the URL once it
+  // finishes activating, so this flag survives that rewrite and the
+  // first-week card stays visible for the rest of the session.
+  const [justSubscribedThisSession, setJustSubscribedThisSession] = useState(false);
 
   // Auth gate
   useEffect(() => {
@@ -58,6 +66,7 @@ const Account = ({ language = "en" }: AccountProps) => {
         }
         window.history.replaceState({}, "", ru ? "/account/ru" : "/account");
       } else if (justSubscribed) {
+        setJustSubscribedThisSession(true);
         // Webhook can race the redirect — retry up to 5× until the
         // subscription actually flips to active in our DB. The earlier
         // "break on first invoke success" exited even when the DB hadn't
@@ -147,16 +156,30 @@ const Account = ({ language = "en" }: AccountProps) => {
           </h1>
         </header>
 
+        {justSubscribedThisSession && <FirstWeekActivationCard language={language} />}
+
         <ProfileSettingsCard language={language} />
 
         <MembershipSettings language={language} variant="standalone" />
 
-        <button
-          onClick={() => navigate(ru ? "/discover/ru" : "/discover")}
-          className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
-        >
-          ← {t("Back to Discover", "К Discover")}
-        </button>
+        <WorkshopQuestionForm language={language} />
+
+        <div className="pt-2 flex flex-wrap items-center gap-4 text-xs">
+          <a
+            href="mailto:team@topuniconsulting.com?subject=%5BMember%5D%20Support%20request"
+            className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            {t("Contact support", "Связаться с поддержкой")}
+          </a>
+          <DeleteAccountButton language={language} />
+          <button
+            onClick={() => navigate(ru ? "/discover/ru" : "/discover")}
+            className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+          >
+            ← {t("Back to Discover", "К Discover")}
+          </button>
+        </div>
       </main>
       <Footer language={language} />
     </div>

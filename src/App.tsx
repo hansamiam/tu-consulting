@@ -93,6 +93,9 @@ const AdminPartnerInquiries      = lazy(() => import("./pages/admin/PartnerInqui
 const AdminSourceCandidates      = lazy(() => import("./pages/admin/SourceCandidates"));
 const AdminDeadlineAudit         = lazy(() => import("./pages/admin/DeadlineAudit"));
 const AdminProducts              = lazy(() => import("./pages/admin/Products"));
+const AdminMembers               = lazy(() => import("./pages/admin/Members"));
+const AdminSegments              = lazy(() => import("./pages/admin/Segments"));
+const AdminNotices               = lazy(() => import("./pages/admin/Notices"));
 const SubmitScholarship    = lazy(() => import("./pages/SubmitScholarship"));
 
 /* Pulls :id out of the legacy /scholarships/:id path and bounces the
@@ -263,6 +266,9 @@ const App = () => (
           <Route path="/admin/source-candidates" element={<AdminSourceCandidates />} />
           <Route path="/admin/deadline-audit" element={<AdminDeadlineAudit />} />
           <Route path="/admin/products" element={<AdminProducts />} />
+          <Route path="/admin/members" element={<AdminMembers />} />
+          <Route path="/admin/segments" element={<AdminSegments />} />
+          <Route path="/admin/notices" element={<AdminNotices />} />
           <Route path="/academy" element={<Academy language="en" />} />
           <Route path="/academy/ru" element={<Academy language="ru" />} />
           <Route path="/academy/resources"    element={<AcademyResources language="en" />} />

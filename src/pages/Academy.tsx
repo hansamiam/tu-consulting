@@ -14,6 +14,7 @@ import samuelPhoto from "@/assets/samuel.jpg";
 import nurzadaPhoto from "@/assets/nurzada.jpg";
 import CurrentCohort from "@/components/academy/CurrentCohort";
 import PastWorkshops from "@/components/academy/PastWorkshops";
+import { UpcomingWorkshopsTeaser } from "@/components/academy/UpcomingWorkshopsTeaser";
 
 const FOUNDERS = [
   { name: "Samuel Han",          credential: "Yale",                  photo: samuelPhoto },
@@ -105,6 +106,8 @@ const Academy = ({ language = "en" }: AcademyProps) => {
           non-members. Self-hides during transition gaps between cycles
           (no open/in_progress cohort in the next 60 days). */}
       <CurrentCohort language={language} />
+
+      <UpcomingWorkshopsTeaser language={language} />
 
       {/* PAST WORKSHOPS — recordings archive. Queries published rows
           from public.academy_workshops where recording_url is set and
