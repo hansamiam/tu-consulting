@@ -179,7 +179,7 @@ interface WizardDraft {
   /** 2026-05-29 v2 — bachelor Step-2 additions. AP/IB skews how an
    *  admissions reader weighs a transcript; favorite subject is the
    *  narrative anchor for applicants without much else to grab. */
-  curriculumType?: "ap" | "ib" | "national" | "other";
+  curriculumType?: "ap" | "ib" | "alevel" | "national" | "other";
   favoriteSubject?: string;
   /** 2026-05-30 v3 — grad-only Narrative additions (cofounder spec).
    *  A Master's / PhD strategy hinges on whether the applicant is
@@ -1750,6 +1750,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               {([
                                 ["ap",       t("AP",                "AP")],
                                 ["ib",       t("IB",                "IB")],
+                                ["alevel",   t("A-Level",           "A-Level")],
                                 ["national", t("National curriculum","Национальная программа")],
                                 ["other",    t("Other",             "Другое")],
                               ] as const).map(([val, label]) => (

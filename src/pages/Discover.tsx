@@ -5220,8 +5220,8 @@ const Discover = ({ language = "en" }: Props) => {
                     "Рабочая зона — канбан-доска, календарь дедлайнов с синхронизацией в Google / Apple Calendar.",
                   ),
                   t(
-                    "Live monthly workshops — Yale, Cambridge & Tsinghua, Harvard alumni. Recordings library kept forever.",
-                    "Воркшопы вживую каждый месяц — выпускники Yale, Cambridge & Tsinghua, Harvard. Архив записей навсегда.",
+                    "Live workshops + office hours every two weeks — Yale, Cambridge & Tsinghua, Harvard alumni. Recordings library kept forever.",
+                    "Воркшопы и office hours каждые две недели — выпускники Yale, Cambridge & Tsinghua, Harvard. Архив записей навсегда.",
                   ),
                 ].map((b, i) => (
                   <div key={i} className="flex items-start gap-2.5">
