@@ -4531,25 +4531,32 @@ const Discover = ({ language = "en" }: Props) => {
                           for direct visits, just no longer surfaced
                           inline on Discover. */}
 
-                      {/* 2026-05-19: Academy CTA card — bridges Discover →
-                          Academy for users who want live human help on top
-                          of the database. Quiet, sidebar-shaped, single
-                          accent line. Doesn't compete with the Browse /
-                          Shortlist nav above it. */}
-                      <Link
-                        to="/academy"
-                        className="block rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.07] to-transparent hover:from-primary/[0.13] px-3 py-3 transition-colors group"
-                      >
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-primary font-semibold mb-1">
-                          {t("Need to speak with an expert?", "Хотите поговорить с экспертом?")}
-                        </p>
-                        <p className="text-[11.5px] text-foreground/80 leading-snug">
-                          {t("Live workshops + office hours with the team.", "Прямые мастер-классы и office hours с командой.")}{" "}
-                          <span className="text-primary font-semibold group-hover:underline underline-offset-4">
-                            {t("Visit Academy", "Открыть Академию")} →
-                          </span>
-                        </p>
-                      </Link>
+                      {/* 2026-05-19: Membership CTA — bridges Discover →
+                          paid membership for users who want live human
+                          help on top of the database. Quiet, sidebar-
+                          shaped, single accent line. Doesn't compete with
+                          Browse / Shortlist nav above it. Suppressed for
+                          existing members (their isMember bypass also
+                          covers admin emails). 2026-05-29: re-pointed
+                          link from /academy → /pricing and CTA label
+                          from "Visit Academy" → "Become a member" so
+                          intent (paid conversion) matches destination. */}
+                      {!isMember && (
+                        <Link
+                          to="/pricing"
+                          className="block rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.07] to-transparent hover:from-primary/[0.13] px-3 py-3 transition-colors group"
+                        >
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-primary font-semibold mb-1">
+                            {t("Need to speak with an expert?", "Хотите поговорить с экспертом?")}
+                          </p>
+                          <p className="text-[11.5px] text-foreground/80 leading-snug">
+                            {t("Live workshops + office hours with the team.", "Прямые мастер-классы и office hours с командой.")}{" "}
+                            <span className="text-primary font-semibold group-hover:underline underline-offset-4">
+                              {t("Become a member", "Стать участником")} →
+                            </span>
+                          </p>
+                        </Link>
+                      )}
 
                       {/* Free-tier shortlist-cap notice. The "items saved
                           locally" status line was removed — it was an

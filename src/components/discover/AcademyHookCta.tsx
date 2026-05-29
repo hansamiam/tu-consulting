@@ -22,6 +22,8 @@
  */
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { isAdminUser } from "@/lib/adminMode";
 
 type Lang = "en" | "ru";
 type Variant = "detail_sheet" | "expired_reopens" | "generic";
@@ -80,6 +82,19 @@ export const AcademyHookCta = ({
   lang = "en",
   className = "",
 }: Props) => {
+  // 2026-05-29: hide the upsell for users who are already paying members
+  // (or admin emails). The whole CTA is "Become a member" — showing it
+  // to someone who already did costs trust + visual noise. Members get
+  // the live workshops + office hours regardless of this surface; this
+  // card is purely a conversion ask.
+  const { user, subscription } = useAuth();
+  const isMember = !!subscription && (
+    subscription.is_active ||
+    subscription.is_founding_member ||
+    isAdminUser(user)
+  );
+  if (isMember) return null;
+
   const copy = COPY[variant][lang === "ru" ? "ru" : "en"];
   const finalHeadline = headline ?? copy.headline;
   const finalBody = body ?? copy.body;
