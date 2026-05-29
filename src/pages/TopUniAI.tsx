@@ -409,13 +409,33 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   // worked but Arrow Up/Down + Enter didn't. Lifting matches into a memo
   // so the onKeyDown handler and the suggestions render share one source
   // of truth; activeIdx tracks which suggestion is highlighted.
+  // RU localisation: cross-reference COUNTRY_MASTER (which carries en/ru
+  // labels for ~50 countries) and pick the RU label when language=ru.
+  // Falls back to the English `v` for countries not in the master list.
+  // Match logic also broadens to RU substrings so a user typing
+  // "Казахстан" finds Kazakhstan.
   const nationalityMatches = useMemo(() => {
     const q = nationality.trim().toLowerCase();
     if (!q) return [];
-    const exact = ALL_COUNTRIES.find(c => c.v.toLowerCase() === q);
+    const masterByToken = new Map(COUNTRY_MASTER.map(c => [c.token.toLowerCase(), c]));
+    const exact = ALL_COUNTRIES.find(c => {
+      const masterRu = masterByToken.get(c.v.toLowerCase())?.ru?.toLowerCase();
+      return c.v.toLowerCase() === q || masterRu === q;
+    });
     if (exact) return [];
-    return ALL_COUNTRIES.filter(c => c.v.toLowerCase().includes(q)).slice(0, 5);
-  }, [nationality]);
+    return ALL_COUNTRIES.filter(c => {
+      const masterRu = masterByToken.get(c.v.toLowerCase())?.ru?.toLowerCase();
+      return c.v.toLowerCase().includes(q) || (masterRu && masterRu.includes(q));
+    }).slice(0, 5).map(c => {
+      const m = masterByToken.get(c.v.toLowerCase());
+      // Display label respects the wizard's current language; canonical
+      // English value still gets written to state on selection so
+      // downstream (intake projection, prompt context) stays
+      // language-stable.
+      const display = ru && m?.ru ? m.ru : c.v;
+      return { v: c.v, f: c.f, display };
+    });
+  }, [nationality, ru]);
   const [nationalityActiveIdx, setNationalityActiveIdx] = useState(0);
   // Whenever the suggestion set changes, snap the highlighted index back
   // to the top so the user doesn't accidentally Enter-select a stale row
@@ -1067,7 +1087,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                 }`}
                               >
                                 <span>{c.f}</span>
-                                <span>{c.v}</span>
+                                <span>{c.display}</span>
                               </button>
                             ))}
                           </div>
@@ -1688,8 +1708,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               value: quantBackground,
                               set: setQuantBackground,
                               options: [
-                                ["heavy",    t("Heavy (advanced stats / calculus)", "Сильная (advanced stats / calculus)")],
-                                ["moderate", t("Moderate (basic stats / econ)",     "Умеренная (basic stats / econ)")],
+                                ["heavy",    t("Heavy (advanced stats / calculus)", "Сильная (статистика, calculus)")],
+                                ["moderate", t("Moderate (basic stats / econ)",     "Умеренная (базовая статистика, econ)")],
                                 ["light",    t("Very light / none",                  "Очень слабая / нет")],
                               ] as const,
                             },
@@ -1710,7 +1730,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               set: setResearchExperience,
                               options: [
                                 ["extensive", t("Extensive (published papers)",      "Серьёзный (есть публикации)")],
-                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab assistant)")],
+                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab-ассистент)")],
                                 ["light",     t("Very light / none",                  "Очень слабый / нет")],
                               ] as const,
                             },
@@ -1816,17 +1836,18 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </Label>
                         <Textarea
                           id="careerGoalNarr"
-                          // 2026-05-30 — placeholder rewrite. Pulled
-                          // McKinsey Almaty (finance/consulting reads
-                          // monocultural for this audience). 4 examples
-                          // now span: STEM research · medicine · global
-                          // policy · arts. Single mention of Almaty
-                          // (Kazakhstan); the rest stay open / global so
-                          // the prompt doesn't telegraph one career
-                          // identity over another.
+                          // 2026-05-30 — rewrite #3. Dropped "Doctor at
+                          // a clinic in Almaty" — Samuel flagged that
+                          // clinic-doctor doesn't read aspirational in
+                          // the CIS context; the prestige register for
+                          // medicine here is "surgeon at a flagship
+                          // hospital" or "researcher at a world-class
+                          // lab", not "GP at the local clinic". Also
+                          // fixed RU leak ("in public health" stayed EN
+                          // on the previous round).
                           placeholder={t(
-                            "e.g. Finished my Stanford PhD, leading public-health research · Doctor at a clinic in Almaty · Senior policy advisor at the UN · Filmmaker whose docs travel international festivals",
-                            "напр. Защитил(а) PhD в Стэнфорде, веду исследования в public health · Врач в клинике в Алматы · Старший советник по политике в ООН · Режиссёр, чьи док-фильмы ездят по международным фестивалям",
+                            "e.g. Finished my Stanford PhD, leading public-health research · Neurosurgeon at a flagship hospital · Senior policy advisor at the UN · Filmmaker whose docs travel international festivals",
+                            "напр. Защитил(а) PhD в Стэнфорде, веду исследования по public health · Нейрохирург во флагманском госпитале · Старший советник по политике в ООН · Режиссёр, чьи док-фильмы ездят по международным фестивалям",
                           )}
                           value={careerGoal}
                           onChange={(e) => setCareerGoal(e.target.value)}
@@ -2326,20 +2347,50 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
  *     no "Other" escape hatch needed, no second input.
  *   - When the input is empty, dropdown shows the full curated list.
  * ──────────────────────────────────────────────────────────────────── */
-const MAJORS = [
-  // Alphabetical so the dropdown is scannable.
-  "Undecided",
-  "Anthropology", "Architecture", "Artificial Intelligence",
-  "Biology", "Business", "Chemistry", "Communications",
-  "Computer Science", "Cultural Studies", "Data Science",
-  "Design", "Development Studies", "Economics", "Education",
-  "Engineering", "Environmental Studies", "Film", "Finance",
-  "History", "International Relations", "Journalism", "Law",
-  "Linguistics", "Literature", "Marketing", "Mathematics",
-  "Medicine & Public Health", "Music", "Performing Arts",
-  "Philosophy", "Physics", "Political Science", "Psychology",
-  "Public Policy", "Social Work", "Sociology", "Statistics",
-  "Sustainability", "Visual Arts",
+// English token = canonical value persisted to state + sent to the LLM.
+// RU label is the display only. Search matches BOTH languages so a user
+// typing "Эконом" finds Economics and typing "Economics" still works.
+const MAJORS: Array<{ en: string; ru: string }> = [
+  { en: "Undecided",                 ru: "Ещё не решил(а)" },
+  { en: "Anthropology",              ru: "Антропология" },
+  { en: "Architecture",              ru: "Архитектура" },
+  { en: "Artificial Intelligence",   ru: "Искусственный интеллект" },
+  { en: "Biology",                   ru: "Биология" },
+  { en: "Business",                  ru: "Бизнес" },
+  { en: "Chemistry",                 ru: "Химия" },
+  { en: "Communications",            ru: "Коммуникации" },
+  { en: "Computer Science",          ru: "Computer Science" },
+  { en: "Cultural Studies",          ru: "Культурология" },
+  { en: "Data Science",              ru: "Data Science" },
+  { en: "Design",                    ru: "Дизайн" },
+  { en: "Development Studies",       ru: "Development Studies" },
+  { en: "Economics",                 ru: "Экономика" },
+  { en: "Education",                 ru: "Педагогика" },
+  { en: "Engineering",               ru: "Инженерия" },
+  { en: "Environmental Studies",     ru: "Экология" },
+  { en: "Film",                      ru: "Кино" },
+  { en: "Finance",                   ru: "Финансы" },
+  { en: "History",                   ru: "История" },
+  { en: "International Relations",   ru: "Международные отношения" },
+  { en: "Journalism",                ru: "Журналистика" },
+  { en: "Law",                       ru: "Юриспруденция" },
+  { en: "Linguistics",               ru: "Лингвистика" },
+  { en: "Literature",                ru: "Литература" },
+  { en: "Marketing",                 ru: "Маркетинг" },
+  { en: "Mathematics",               ru: "Математика" },
+  { en: "Medicine & Public Health",  ru: "Медицина и public health" },
+  { en: "Music",                     ru: "Музыка" },
+  { en: "Performing Arts",           ru: "Исполнительские искусства" },
+  { en: "Philosophy",                ru: "Философия" },
+  { en: "Physics",                   ru: "Физика" },
+  { en: "Political Science",         ru: "Политология" },
+  { en: "Psychology",                ru: "Психология" },
+  { en: "Public Policy",             ru: "Государственная политика" },
+  { en: "Social Work",               ru: "Социальная работа" },
+  { en: "Sociology",                 ru: "Социология" },
+  { en: "Statistics",                ru: "Статистика" },
+  { en: "Sustainability",            ru: "Устойчивое развитие" },
+  { en: "Visual Arts",               ru: "Изобразительное искусство" },
 ];
 
 interface MajorComboboxProps {
@@ -2349,31 +2400,46 @@ interface MajorComboboxProps {
   language: "en" | "ru";
 }
 
-const MajorCombobox = ({ value, onChange, t }: MajorComboboxProps) => {
+const MajorCombobox = ({ value, onChange, t, language }: MajorComboboxProps) => {
+  const isRu = language === "ru";
+  const labelFor = (m: { en: string; ru: string }) => (isRu ? m.ru : m.en);
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const matches = useMemo(() => {
     const q = value.trim().toLowerCase();
     if (!q) return MAJORS;
-    const starts = MAJORS.filter(m => m.toLowerCase().startsWith(q));
-    const contains = MAJORS.filter(m => !m.toLowerCase().startsWith(q) && m.toLowerCase().includes(q));
+    // Match the typed value against BOTH languages, so "Эконом" finds
+    // Economics in EN mode and "Economics" still works in RU mode.
+    const hit = (m: { en: string; ru: string }) =>
+      m.en.toLowerCase().includes(q) || m.ru.toLowerCase().includes(q);
+    const startsWith = (m: { en: string; ru: string }) =>
+      m.en.toLowerCase().startsWith(q) || m.ru.toLowerCase().startsWith(q);
+    const starts = MAJORS.filter(startsWith);
+    const contains = MAJORS.filter(m => !startsWith(m) && hit(m));
     return [...starts, ...contains];
   }, [value]);
   useEffect(() => { setActiveIdx(0); }, [matches]);
 
   const pickIfMatch = (raw: string) => {
-    // If the typed value canonical-matches a row, normalise to that
-    // exact casing/spelling. Otherwise pass through as-is — the user's
-    // free-text submission is the source of truth.
-    const norm = raw.trim();
-    const exact = MAJORS.find(m => m.toLowerCase() === norm.toLowerCase());
-    onChange(exact ?? norm);
+    // If the typed value canonical-matches a row in either language,
+    // normalise to the EN token (canonical for downstream). Otherwise
+    // pass through as-is — the user's free-text submission is the
+    // source of truth (covers long-tail majors not on the list).
+    const norm = raw.trim().toLowerCase();
+    const exact = MAJORS.find(m => m.en.toLowerCase() === norm || m.ru.toLowerCase() === norm);
+    onChange(exact ? exact.en : raw.trim());
   };
+
+  // Show the RU label in the Input when the state value canonical-matches
+  // a known major and we're in RU mode. Free-text long-tail entries
+  // ("Quantum Biophysics") display as-typed in both languages.
+  const canonical = isRu ? MAJORS.find(m => m.en === value) : null;
+  const displayValue = canonical ? canonical.ru : value;
 
   return (
     <div className="relative">
       <Input
-        value={value}
+        value={displayValue}
         onChange={e => { onChange(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         onBlur={() => { setTimeout(() => setOpen(false), 120); /* allow click before close */ }}
@@ -2388,7 +2454,7 @@ const MajorCombobox = ({ value, onChange, t }: MajorComboboxProps) => {
           } else if (e.key === "Enter") {
             e.preventDefault();
             const pick = matches[activeIdx];
-            if (pick) onChange(pick);
+            if (pick) onChange(pick.en);
             setOpen(false);
           } else if (e.key === "Escape") {
             setOpen(false);
@@ -2411,7 +2477,7 @@ const MajorCombobox = ({ value, onChange, t }: MajorComboboxProps) => {
         >
           {matches.map((m, i) => (
             <button
-              key={m}
+              key={m.en}
               type="button"
               role="option"
               aria-selected={i === activeIdx}
@@ -2419,7 +2485,7 @@ const MajorCombobox = ({ value, onChange, t }: MajorComboboxProps) => {
                 // Use onMouseDown so the click fires before onBlur
                 // closes the popover.
                 e.preventDefault();
-                onChange(m);
+                onChange(m.en);
                 setOpen(false);
               }}
               onMouseEnter={() => setActiveIdx(i)}
@@ -2427,7 +2493,7 @@ const MajorCombobox = ({ value, onChange, t }: MajorComboboxProps) => {
                 i === activeIdx ? "bg-muted/60 text-foreground" : "text-foreground/85 hover:bg-muted/60"
               }`}
             >
-              {m}
+              {labelFor(m)}
             </button>
           ))}
         </div>

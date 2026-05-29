@@ -154,20 +154,19 @@ export const MembershipCTA = ({ language }: Props) => {
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="min-w-0">
-              {/* 2026-05-30 — drop "Launch discount — first 50." subline +
-                  founding-counter scarcity row. NURZADA50 is the actual
-                  50% code for Nurzada's audience (separate distribution).
-                  The general early-launch discount is purely the visual
-                  $39.99 → $29.99 crossed-out effect. */}
-              <p className="text-[12.5px] leading-[1.45] text-foreground/85 m-0">
-                {stillOpen ? (
-                  <>
-                    <span className="text-foreground/45 line-through mr-1.5">{STANDARD_PRICE}</span>
-                    <span className="font-semibold">{LAUNCH_PRICE} / {t(language, "month", "месяц")}.</span>
-                  </>
-                ) : (
-                  <span className="font-semibold">{STANDARD_PRICE} / {t(language, "month", "месяц")}.</span>
-                )}
+              {/* 2026-05-30 — crossed-out launch-discount visual is now
+                  UNCONDITIONAL. Previous version only rendered the strike
+                  when stillOpen was true (foundingLeft != null && > 0);
+                  on the Vercel preview the counter row was missing, so
+                  stillOpen evaluated false and the visual never showed.
+                  The discount is a sales tactic — render it regardless
+                  of counter state. */}
+              <p className="text-[12.5px] leading-[1.45] text-foreground/85 m-0 flex flex-wrap items-baseline gap-x-1.5">
+                <span className="text-foreground/45 line-through decoration-[1.5px] decoration-rose-500/70">
+                  {STANDARD_PRICE}
+                </span>
+                <span className="font-bold text-foreground">{LAUNCH_PRICE}</span>
+                <span className="text-foreground/65">/ {t(language, "month", "месяц")}.</span>
               </p>
             </div>
             <Button
