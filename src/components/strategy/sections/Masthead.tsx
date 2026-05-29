@@ -4,12 +4,17 @@
 //
 //   Prepared for: Matthew | Track: Bachelor's (AI) | Target: Canada
 //   May 29, 2026
-//   Confidential · Do not distribute without written permission from Top Uni.
 //   ────────────────────────────────────────────────────────────
 //
 // Drops the golden T monogram (Samuel: "what the heck is that"). Adds
 // the Readiness Score inline top-right next to "Top Uni" — keeps it
 // high on the page without competing with the bold headline below.
+//
+// 2026-05-30 — Confidential / "do not distribute" footer dropped.
+// Looked formal at first but it actively deterred any micro-
+// influencer who might post about their dossier and amplify the
+// brand. Org-internal documents are different; this is a user-owned
+// strategy report we WANT shared.
 
 import type { Language, StrategyReportV2 } from "../types";
 import { t } from "../types";
@@ -130,14 +135,8 @@ export const Masthead = ({
         </p>
       )}
 
-      {/* Confidential line */}
-      <p className="text-[10px] text-foreground/45 m-0 italic">
-        {t(
-          language,
-          "Confidential · Do not distribute without written permission from Top Uni.",
-          "Конфиденциально · Не распространять без письменного разрешения Top Uni.",
-        )}
-      </p>
+      {/* 2026-05-30 — Confidential / non-distribute line removed —
+          intentionally encouraging shares of the dossier. */}
     </header>
   );
 };
