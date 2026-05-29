@@ -30,7 +30,15 @@ import {
   Search,
   BookOpen,
   ListChecks,
-  Map,
+  // 2026-05-30 — aliased to MapIcon to avoid shadowing the global JS
+  // Map constructor in this file's module scope. Pre-fix the
+  // nationality typeahead's `new Map(...)` resolved to this icon
+  // component in the production bundle (the lucide Map is a
+  // forwardRef function, not a constructor), throwing "Us is not a
+  // constructor" at runtime the moment the user typed in Step 1.
+  // The icon itself is currently unused below (legacy import) but
+  // tree-shaking only kicks in on truly unreferenced names.
+  Map as MapIcon,
   Zap,
   Crown,
   Plus,
@@ -314,6 +322,158 @@ interface TopUniAIProps {
    *  the saveProfile redirect target to /discover/ru. */
   language?: "en" | "ru";
 }
+
+/* ─── MajorCombobox ────────────────────────────────────────────────
+ * Typeahead for the "What do you want to study?" field.
+ *
+ * Declared BEFORE TopUniAI to avoid any forward-reference / inlining
+ * edge case in production minification — Samuel hit a "Us is not a
+ * constructor" runtime error after the v2 audit and the most likely
+ * culprit was Vite/Terser misinterpreting the late-declared component.
+ *
+ * Behaviour: free-typing filters the canonical major list AND becomes
+ * the submitted value if no row matches. Arrow Up/Down navigates,
+ * Enter selects, Escape closes, Tab commits. Bilingual: matches both
+ * EN and RU labels; canonical EN token is what gets persisted.
+ * ──────────────────────────────────────────────────────────────────── */
+const MAJORS: Array<{ en: string; ru: string }> = [
+  { en: "Undecided",                 ru: "Ещё не решил(а)" },
+  { en: "Anthropology",              ru: "Антропология" },
+  { en: "Architecture",              ru: "Архитектура" },
+  { en: "Artificial Intelligence",   ru: "Искусственный интеллект" },
+  { en: "Biology",                   ru: "Биология" },
+  { en: "Business",                  ru: "Бизнес" },
+  { en: "Chemistry",                 ru: "Химия" },
+  { en: "Communications",            ru: "Коммуникации" },
+  { en: "Computer Science",          ru: "Computer Science" },
+  { en: "Cultural Studies",          ru: "Культурология" },
+  { en: "Data Science",              ru: "Data Science" },
+  { en: "Design",                    ru: "Дизайн" },
+  { en: "Development Studies",       ru: "Development Studies" },
+  { en: "Economics",                 ru: "Экономика" },
+  { en: "Education",                 ru: "Педагогика" },
+  { en: "Engineering",               ru: "Инженерия" },
+  { en: "Environmental Studies",     ru: "Экология" },
+  { en: "Film",                      ru: "Кино" },
+  { en: "Finance",                   ru: "Финансы" },
+  { en: "History",                   ru: "История" },
+  { en: "International Relations",   ru: "Международные отношения" },
+  { en: "Journalism",                ru: "Журналистика" },
+  { en: "Law",                       ru: "Юриспруденция" },
+  { en: "Linguistics",               ru: "Лингвистика" },
+  { en: "Literature",                ru: "Литература" },
+  { en: "Marketing",                 ru: "Маркетинг" },
+  { en: "Mathematics",               ru: "Математика" },
+  { en: "Medicine & Public Health",  ru: "Медицина и public health" },
+  { en: "Music",                     ru: "Музыка" },
+  { en: "Performing Arts",           ru: "Исполнительские искусства" },
+  { en: "Philosophy",                ru: "Философия" },
+  { en: "Physics",                   ru: "Физика" },
+  { en: "Political Science",         ru: "Политология" },
+  { en: "Psychology",                ru: "Психология" },
+  { en: "Public Policy",             ru: "Государственная политика" },
+  { en: "Social Work",               ru: "Социальная работа" },
+  { en: "Sociology",                 ru: "Социология" },
+  { en: "Statistics",                ru: "Статистика" },
+  { en: "Sustainability",            ru: "Устойчивое развитие" },
+  { en: "Visual Arts",               ru: "Изобразительное искусство" },
+];
+
+interface MajorComboboxProps {
+  value: string;
+  onChange: (v: string) => void;
+  t: (en: string, ru: string) => string;
+  language: "en" | "ru";
+}
+
+const MajorCombobox = ({ value, onChange, t, language }: MajorComboboxProps) => {
+  const isRu = language === "ru";
+  const labelFor = (m: { en: string; ru: string }) => (isRu ? m.ru : m.en);
+  const [open, setOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const matches = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return MAJORS;
+    const hit = (m: { en: string; ru: string }) =>
+      m.en.toLowerCase().includes(q) || m.ru.toLowerCase().includes(q);
+    const startsWith = (m: { en: string; ru: string }) =>
+      m.en.toLowerCase().startsWith(q) || m.ru.toLowerCase().startsWith(q);
+    const starts = MAJORS.filter(startsWith);
+    const contains = MAJORS.filter(m => !startsWith(m) && hit(m));
+    return [...starts, ...contains];
+  }, [value]);
+  useEffect(() => { setActiveIdx(0); }, [matches]);
+
+  const pickIfMatch = (raw: string) => {
+    const norm = raw.trim().toLowerCase();
+    const exact = MAJORS.find(m => m.en.toLowerCase() === norm || m.ru.toLowerCase() === norm);
+    onChange(exact ? exact.en : raw.trim());
+  };
+
+  const canonical = isRu ? MAJORS.find(m => m.en === value) : null;
+  const displayValue = canonical ? canonical.ru : value;
+
+  return (
+    <div className="relative">
+      <Input
+        value={displayValue}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { setTimeout(() => setOpen(false), 120); }}
+        onKeyDown={e => {
+          if (!open || matches.length === 0) return;
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveIdx(i => Math.min(i + 1, matches.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIdx(i => Math.max(i - 1, 0));
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            const pick = matches[activeIdx];
+            if (pick) onChange(pick.en);
+            setOpen(false);
+          } else if (e.key === "Escape") {
+            setOpen(false);
+            pickIfMatch(value);
+          } else if (e.key === "Tab") {
+            pickIfMatch(value);
+            setOpen(false);
+          }
+        }}
+        placeholder={t("Search or type your major", "Введи или выбери специальность")}
+        className="h-11 bg-card"
+        autoComplete="off"
+      />
+      {open && matches.length > 0 && (
+        <div
+          role="listbox"
+          className="absolute z-30 left-0 right-0 top-full mt-1 max-h-72 overflow-y-auto rounded-md border border-border bg-card shadow-lg"
+        >
+          {matches.map((m, i) => (
+            <button
+              key={m.en}
+              type="button"
+              role="option"
+              aria-selected={i === activeIdx}
+              onMouseDown={e => {
+                e.preventDefault();
+                onChange(m.en);
+                setOpen(false);
+              }}
+              onMouseEnter={() => setActiveIdx(i)}
+              className={`w-full flex items-center px-3 py-2 text-left text-sm transition-colors ${
+                i === activeIdx ? "bg-muted/60 text-foreground" : "text-foreground/85 hover:bg-muted/60"
+              }`}
+            >
+              {labelFor(m)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
   const ru = language === "ru";
@@ -2331,173 +2491,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
             and the cream canvas calls for site chrome. */}
         {screen === "dashboard" && <Footer language="en" />}
       </div>
-    </div>
-  );
-};
-
-/* ─── MajorCombobox ────────────────────────────────────────────────
- * Typeahead for the "What do you want to study?" field.
- *
- * Behaviour:
- *   - The input shows whatever the user has typed (or picked).
- *   - Suggestions filter the canonical major list by substring match.
- *   - Arrow Up/Down navigates suggestions, Enter selects, Escape closes.
- *   - If the user types a value that doesn't match anything (e.g.
- *     "Quantum Biophysics"), that string is what gets submitted —
- *     no "Other" escape hatch needed, no second input.
- *   - When the input is empty, dropdown shows the full curated list.
- * ──────────────────────────────────────────────────────────────────── */
-// English token = canonical value persisted to state + sent to the LLM.
-// RU label is the display only. Search matches BOTH languages so a user
-// typing "Эконом" finds Economics and typing "Economics" still works.
-const MAJORS: Array<{ en: string; ru: string }> = [
-  { en: "Undecided",                 ru: "Ещё не решил(а)" },
-  { en: "Anthropology",              ru: "Антропология" },
-  { en: "Architecture",              ru: "Архитектура" },
-  { en: "Artificial Intelligence",   ru: "Искусственный интеллект" },
-  { en: "Biology",                   ru: "Биология" },
-  { en: "Business",                  ru: "Бизнес" },
-  { en: "Chemistry",                 ru: "Химия" },
-  { en: "Communications",            ru: "Коммуникации" },
-  { en: "Computer Science",          ru: "Computer Science" },
-  { en: "Cultural Studies",          ru: "Культурология" },
-  { en: "Data Science",              ru: "Data Science" },
-  { en: "Design",                    ru: "Дизайн" },
-  { en: "Development Studies",       ru: "Development Studies" },
-  { en: "Economics",                 ru: "Экономика" },
-  { en: "Education",                 ru: "Педагогика" },
-  { en: "Engineering",               ru: "Инженерия" },
-  { en: "Environmental Studies",     ru: "Экология" },
-  { en: "Film",                      ru: "Кино" },
-  { en: "Finance",                   ru: "Финансы" },
-  { en: "History",                   ru: "История" },
-  { en: "International Relations",   ru: "Международные отношения" },
-  { en: "Journalism",                ru: "Журналистика" },
-  { en: "Law",                       ru: "Юриспруденция" },
-  { en: "Linguistics",               ru: "Лингвистика" },
-  { en: "Literature",                ru: "Литература" },
-  { en: "Marketing",                 ru: "Маркетинг" },
-  { en: "Mathematics",               ru: "Математика" },
-  { en: "Medicine & Public Health",  ru: "Медицина и public health" },
-  { en: "Music",                     ru: "Музыка" },
-  { en: "Performing Arts",           ru: "Исполнительские искусства" },
-  { en: "Philosophy",                ru: "Философия" },
-  { en: "Physics",                   ru: "Физика" },
-  { en: "Political Science",         ru: "Политология" },
-  { en: "Psychology",                ru: "Психология" },
-  { en: "Public Policy",             ru: "Государственная политика" },
-  { en: "Social Work",               ru: "Социальная работа" },
-  { en: "Sociology",                 ru: "Социология" },
-  { en: "Statistics",                ru: "Статистика" },
-  { en: "Sustainability",            ru: "Устойчивое развитие" },
-  { en: "Visual Arts",               ru: "Изобразительное искусство" },
-];
-
-interface MajorComboboxProps {
-  value: string;
-  onChange: (v: string) => void;
-  t: (en: string, ru: string) => string;
-  language: "en" | "ru";
-}
-
-const MajorCombobox = ({ value, onChange, t, language }: MajorComboboxProps) => {
-  const isRu = language === "ru";
-  const labelFor = (m: { en: string; ru: string }) => (isRu ? m.ru : m.en);
-  const [open, setOpen] = useState(false);
-  const [activeIdx, setActiveIdx] = useState(0);
-  const matches = useMemo(() => {
-    const q = value.trim().toLowerCase();
-    if (!q) return MAJORS;
-    // Match the typed value against BOTH languages, so "Эконом" finds
-    // Economics in EN mode and "Economics" still works in RU mode.
-    const hit = (m: { en: string; ru: string }) =>
-      m.en.toLowerCase().includes(q) || m.ru.toLowerCase().includes(q);
-    const startsWith = (m: { en: string; ru: string }) =>
-      m.en.toLowerCase().startsWith(q) || m.ru.toLowerCase().startsWith(q);
-    const starts = MAJORS.filter(startsWith);
-    const contains = MAJORS.filter(m => !startsWith(m) && hit(m));
-    return [...starts, ...contains];
-  }, [value]);
-  useEffect(() => { setActiveIdx(0); }, [matches]);
-
-  const pickIfMatch = (raw: string) => {
-    // If the typed value canonical-matches a row in either language,
-    // normalise to the EN token (canonical for downstream). Otherwise
-    // pass through as-is — the user's free-text submission is the
-    // source of truth (covers long-tail majors not on the list).
-    const norm = raw.trim().toLowerCase();
-    const exact = MAJORS.find(m => m.en.toLowerCase() === norm || m.ru.toLowerCase() === norm);
-    onChange(exact ? exact.en : raw.trim());
-  };
-
-  // Show the RU label in the Input when the state value canonical-matches
-  // a known major and we're in RU mode. Free-text long-tail entries
-  // ("Quantum Biophysics") display as-typed in both languages.
-  const canonical = isRu ? MAJORS.find(m => m.en === value) : null;
-  const displayValue = canonical ? canonical.ru : value;
-
-  return (
-    <div className="relative">
-      <Input
-        value={displayValue}
-        onChange={e => { onChange(e.target.value); setOpen(true); }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => { setTimeout(() => setOpen(false), 120); /* allow click before close */ }}
-        onKeyDown={e => {
-          if (!open || matches.length === 0) return;
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            setActiveIdx(i => Math.min(i + 1, matches.length - 1));
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            setActiveIdx(i => Math.max(i - 1, 0));
-          } else if (e.key === "Enter") {
-            e.preventDefault();
-            const pick = matches[activeIdx];
-            if (pick) onChange(pick.en);
-            setOpen(false);
-          } else if (e.key === "Escape") {
-            setOpen(false);
-            pickIfMatch(value);
-          } else if (e.key === "Tab") {
-            // Tab commits whatever's typed — normalise to canonical if
-            // it matches, then let the default behaviour move focus.
-            pickIfMatch(value);
-            setOpen(false);
-          }
-        }}
-        placeholder={t("Search or type your major", "Введи или выбери специальность")}
-        className="h-11 bg-card"
-        autoComplete="off"
-      />
-      {open && matches.length > 0 && (
-        <div
-          role="listbox"
-          className="absolute z-30 left-0 right-0 top-full mt-1 max-h-72 overflow-y-auto rounded-md border border-border bg-card shadow-lg"
-        >
-          {matches.map((m, i) => (
-            <button
-              key={m.en}
-              type="button"
-              role="option"
-              aria-selected={i === activeIdx}
-              onMouseDown={e => {
-                // Use onMouseDown so the click fires before onBlur
-                // closes the popover.
-                e.preventDefault();
-                onChange(m.en);
-                setOpen(false);
-              }}
-              onMouseEnter={() => setActiveIdx(i)}
-              className={`w-full flex items-center px-3 py-2 text-left text-sm transition-colors ${
-                i === activeIdx ? "bg-muted/60 text-foreground" : "text-foreground/85 hover:bg-muted/60"
-              }`}
-            >
-              {labelFor(m)}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
