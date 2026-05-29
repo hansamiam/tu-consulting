@@ -159,10 +159,10 @@ const MemberInsight = ({ text }: { text: string }) => (
   </section>
 );
 
-// TEMP 2026-05-27: paywall disabled — any user with a profile sees the
-// pregenerated insight. Flip back to `false` to restore the members-only
-// gate without touching the PaywallCard code below.
-const PUBLIC_INSIGHTS_TEMP = true;
+// 2026-05-29: paywall restored ahead of membership launch. Anon + free
+// users see the BuildProfileCard / PaywallCard. isAdminUser already
+// bypasses via the canRead check below.
+const PUBLIC_INSIGHTS_TEMP = false;
 
 export const ScholarshipArchetypeInsight = ({ scholarshipId }: Props) => {
   const detectedArchetype = useUserArchetype();

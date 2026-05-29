@@ -31,10 +31,10 @@ import { accentForCountry } from "@/lib/countryAccent";
  * longer rendered here.
  */
 
-// TEMP 2026-05-27: paywall disabled — anyone can see Top Uni Insights.
-// Flip to `false` to restore the members-only gate when the founding-20
-// launch flips. Mirrors the same flag in ScholarshipArchetypeInsight.
-const PUBLIC_INSIGHTS_TEMP = true;
+// 2026-05-29: paywall restored ahead of membership launch. Anon + free
+// users see the PaywallCard; isAdminUser still bypasses via the isMember
+// check below. Mirrors the same flag in ScholarshipArchetypeInsight.
+const PUBLIC_INSIGHTS_TEMP = false;
 
 interface Props {
   scholarshipId: string;
@@ -278,39 +278,41 @@ const ComingSoonCard = ({
         {t("More notes coming soon.", "Скоро будут новые заметки.")}
       </p>
       {pick && (
-        <div>
-          <p className="text-[13px] text-foreground/65 italic m-0 mb-3">
+        // 2026-05-29: combined bubble — the "in the meantime…" label now
+        // lives inside the same card as the scholarship pick. Not italic.
+        // Sits between the body text (text-[13px] muted) and the
+        // ComingSoon headline (text-[22–24px] bold) in weight.
+        <Link
+          to={`/scholarships/${pick.scholarship_id}${language === "ru" ? "/ru" : ""}`}
+          className="group block rounded-xl border border-gold/35 bg-gradient-to-br from-gold/[0.06] via-card to-card hover:border-gold/60 hover:from-gold/[0.12] transition-all overflow-hidden"
+        >
+          <p className="text-[14.5px] font-semibold text-foreground/85 leading-snug m-0 px-4 pt-3 pb-2.5">
             {t(
-              "in the meantime, browse more scholarships",
-              "а пока — посмотрите другие стипендии"
+              "In the meantime, browse more scholarships",
+              "А пока — посмотрите другие стипендии"
             )}
           </p>
-          <Link
-            to={`/scholarships/${pick.scholarship_id}${language === "ru" ? "/ru" : ""}`}
-            className="group block rounded-xl border border-gold/35 bg-gradient-to-br from-gold/[0.06] via-card to-card hover:border-gold/60 hover:from-gold/[0.12] transition-all overflow-hidden"
-          >
-            <div className="flex items-stretch min-w-0">
-              <div
-                className={`shrink-0 w-16 sm:w-20 flex items-center justify-center bg-gradient-to-br ${accentForCountry(pick.host_country || "") || "from-gold/20 to-gold/5"}`}
-              >
-                <span className="text-2xl sm:text-[28px] leading-none drop-shadow-sm">
-                  {countryFlag(pick.host_country || "") || "🎓"}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 min-w-0 flex-1 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 line-clamp-2">
-                    {pick.scholarship_name}
-                  </p>
-                  <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
-                    {[pick.provider_name, pick.host_country].filter(Boolean).join(" · ")}
-                  </p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
-              </div>
+          <div className="flex items-stretch min-w-0 border-t border-gold/20">
+            <div
+              className={`shrink-0 w-16 sm:w-20 flex items-center justify-center bg-gradient-to-br ${accentForCountry(pick.host_country || "") || "from-gold/20 to-gold/5"}`}
+            >
+              <span className="text-2xl sm:text-[28px] leading-none drop-shadow-sm">
+                {countryFlag(pick.host_country || "") || "🎓"}
+              </span>
             </div>
-          </Link>
-        </div>
+            <div className="flex items-center gap-3 min-w-0 flex-1 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-heading text-[14.5px] font-bold text-foreground leading-tight m-0 line-clamp-2">
+                  {pick.scholarship_name}
+                </p>
+                <p className="text-[12px] text-foreground/60 m-0 mt-0.5 truncate">
+                  {[pick.provider_name, pick.host_country].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-gold-dark shrink-0 transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </div>
+        </Link>
       )}
     </section>
   );
@@ -350,22 +352,50 @@ async function findRelatedScholarships(
   hostCountry: string | null,
   desiredCount: number,
 ): Promise<RelatedScholarship[]> {
-  type Row = {
-    scholarship_id: string;
-    scholarships: {
-      scholarship_name: string;
-      provider_name: string | null;
-      host_country: string | null;
-      verified: boolean | null;
-    } | null;
+  // 2026-05-29 fix: dead-link suggestions. Pre-fix we filtered only on
+  // scholarships.verified=true, which let through rows whose
+  // lifecycle_status had since flipped to closed_recent / closed_archived
+  // OR whose application_deadline had passed. Both states hide the row
+  // from Discover's live catalog, so the user clicked through and got a
+  // ghost detail page (NextGen Women incident). Mirror Discover.tsx's
+  // catalog gates here verbatim:
+  //   verification_status in (verified, stale, pending) OR null
+  //   lifecycle_status in (active, reopens_annually) OR null
+  //   application_deadline >= today
+  //
+  // PostgREST OR-filters on a joined table need foreignTable plumbing
+  // that varies across supabase-js versions, so we over-fetch and
+  // filter client-side. The catalog is small enough that pulling 4x
+  // the desired count is essentially free.
+  type Joined = {
+    scholarship_name: string;
+    provider_name: string | null;
+    host_country: string | null;
+    verification_status: string | null;
+    lifecycle_status: string | null;
+    application_deadline: string | null;
   };
-  const baseSelect = "scholarship_id, scholarships!inner(scholarship_name, provider_name, host_country, verified)";
+  type Row = { scholarship_id: string; scholarships: Joined | null };
+  const today = new Date().toISOString().slice(0, 10);
+  const VISIBLE_VERIFICATION = new Set(["verified", "stale", "pending"]);
+  const VISIBLE_LIFECYCLE = new Set(["active", "reopens_annually"]);
+  const isVisible = (s: Joined): boolean => {
+    if (s.verification_status && !VISIBLE_VERIFICATION.has(s.verification_status)) return false;
+    if (s.lifecycle_status && !VISIBLE_LIFECYCLE.has(s.lifecycle_status)) return false;
+    if (!s.application_deadline) return false;
+    return s.application_deadline >= today;
+  };
+
+  const baseSelect =
+    "scholarship_id, scholarships!inner(scholarship_name, provider_name, host_country, " +
+    "verification_status, lifecycle_status, application_deadline)";
   const seen = new Set<string>([excludeId]);
   const out: RelatedScholarship[] = [];
   const push = (rows: Row[] | null | undefined) => {
     for (const r of rows ?? []) {
       if (out.length >= desiredCount) return;
       if (seen.has(r.scholarship_id) || !r.scholarships) continue;
+      if (!isVisible(r.scholarships)) continue;
       seen.add(r.scholarship_id);
       out.push({
         scholarship_id: r.scholarship_id,
@@ -377,28 +407,27 @@ async function findRelatedScholarships(
   };
 
   // Same host country first — most relevant signal we have without
-  // pulling the matcher pipeline.
+  // pulling the matcher pipeline. Over-fetch (×4) since some rows will
+  // be filtered by the client-side visibility check.
   if (hostCountry) {
     const { data } = await supabase
       .from("scholarship_mini_guides")
       .select(baseSelect)
       .not("top_insights", "is", null)
       .neq("scholarship_id", excludeId)
-      .eq("scholarships.verified", true)
       .eq("scholarships.host_country", hostCountry)
-      .limit(desiredCount);
+      .limit(desiredCount * 4);
     push(data as unknown as Row[] | null);
   }
 
-  // Top up with any verified-with-insights row if we didn't fill.
+  // Top up with any with-insights row if we didn't fill.
   if (out.length < desiredCount) {
     const { data } = await supabase
       .from("scholarship_mini_guides")
       .select(baseSelect)
       .not("top_insights", "is", null)
       .neq("scholarship_id", excludeId)
-      .eq("scholarships.verified", true)
-      .limit(desiredCount * 2);
+      .limit(desiredCount * 8);
     push(data as unknown as Row[] | null);
   }
 
