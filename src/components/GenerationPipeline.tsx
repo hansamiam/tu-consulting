@@ -106,7 +106,7 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
       Icon: Quote,
       label: t("Drafting your honest diagnosis", "Готовим честный диагноз"),
       detail: countryList
-        ? t(`Optimistic-realist framing for ${countryList}`, `Optimistic-realist рамка для ${countryList}`)
+        ? t(`Optimistic-realist framing for ${countryList}`, `Оптимистично-реалистичная рамка для ${countryList}`)
         : t(
             "Two-to-three sentence pull-quote — honest about the gap, the lever, and the stakes",
             "2-3 предложения — про рычаг, пробел и ставки",

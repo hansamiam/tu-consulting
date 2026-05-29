@@ -19,6 +19,10 @@ import { Footer } from "@/components/Footer";
 import { OutcomesBar } from "@/components/OutcomesBar";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthDialog } from "@/components/auth/AuthDialog";
+import { setPostAuthRedirect } from "@/lib/postAuthRedirect";
+import { track } from "@/lib/analytics";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -39,7 +43,37 @@ const TEAM = [
 
 const IndexRu = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [liveCount, setLiveCount] = useState<number | null>(null);
+
+  // 2026-05-29 — Russian landing CTA now skips /pricing/ru and goes
+  // straight to Stripe hosted checkout, matching the EN flow.
+  const startCheckoutDirect = async () => {
+    track("landing_cta_clicked", { authed: !!user, surface: "index-ru" });
+    if (!user) {
+      setPostAuthRedirect(window.location.pathname);
+      setAuthOpen(true);
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "create-subscription-checkout",
+        { body: { tier: "founding", interval: "month", embedded: false } },
+      );
+      if (error) throw new Error(error.message);
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      throw new Error("Checkout URL missing");
+    } catch (e) {
+      console.error("[index-ru-cta] checkout error:", (e as Error).message);
+      setCheckoutLoading(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -281,7 +315,7 @@ const IndexRu = () => {
           >
             <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
               <motion.div {...fadeUp()} className="inline-flex items-center px-3 py-1 rounded-full border border-gold/30 bg-gold/10 text-gold-dark text-[11px] font-medium tracking-[0.18em] uppercase mb-7">
-                Ранняя скидка для первых 50
+                Top Uni Membership
               </motion.div>
               <motion.h2 {...fadeUp(0.05)} className="font-sans text-3xl sm:text-5xl font-semibold tracking-normal leading-[1.1] mb-5">
                 Стать участником, $39.99/мес.
@@ -294,10 +328,17 @@ const IndexRu = () => {
                   variant="gold"
                   size="lg"
                   className="text-base px-8 py-6 gap-2"
-                  onClick={() => navigate('/pricing/ru')}
+                  onClick={startCheckoutDirect}
+                  disabled={checkoutLoading}
                 >
                   Забронировать место <ArrowRight className="h-4 w-4" />
                 </Button>
+                <AuthDialog
+                  open={authOpen}
+                  onOpenChange={setAuthOpen}
+                  language="ru"
+                  initialMode="signup"
+                />
               </motion.div>
             </div>
           </section>

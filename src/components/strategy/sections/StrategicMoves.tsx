@@ -38,7 +38,7 @@ export const StrategicMoves = ({
       text={blindspot}
     />
     <Move
-      label={t(language, "Target Opportunity", "Целевая возможность")}
+      label={t(language, "Target Opportunity", "Целевое направление")}
       text={targetOpportunity}
     />
   </>

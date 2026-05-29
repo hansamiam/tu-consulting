@@ -14,7 +14,7 @@ export const FitDiagnosis = ({ rows, language }: Props) => {
   if (!rows || rows.length === 0) return null;
   return (
     <section className="mb-5">
-      <SectionLabel>{t(language, "Fit Diagnosis", "Диагностика fit")}</SectionLabel>
+      <SectionLabel>{t(language, "Fit Diagnosis", "Соответствие профилю")}</SectionLabel>
       <div className="space-y-2.5">
         {rows.map((row, i) => (
           <div key={i}>

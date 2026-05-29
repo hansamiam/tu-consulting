@@ -66,7 +66,6 @@ const COPY = {
     publicNoteRest: "No long-term lock-in.",
     cta: {
       loading: "",
-      isFounding: "You're a member · Manage in Account",
       isMember: "You're a member · Manage in Account",
       claim: "Become a member",
     },
@@ -105,7 +104,6 @@ const COPY = {
     publicNoteRest: "Без долгосрочных обязательств.",
     cta: {
       loading: "",
-      isFounding: "Вы участник · Управление в Аккаунте",
       isMember: "Вы участник · Управление в Аккаунте",
       claim: "Стать членом",
     },
