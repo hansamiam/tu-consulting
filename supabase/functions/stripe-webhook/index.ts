@@ -119,6 +119,55 @@ async function syncSubscription(
   return { userId, userEmail };
 }
 
+// Sent a few seconds after membership-welcome on customer.subscription.created.
+// Picks the academy_resources row flagged is_welcome_gift = true and
+// drops a "small thing on the house" email linking to the member
+// resources page (signed download is fetched from /academy/resources
+// after the user signs in — the email does not embed a signed URL so
+// it stays unforgeable). Silent no-op when no gift row is configured.
+async function queueWelcomeGiftEmail(
+  admin: ReturnType<typeof createServiceClient>,
+  email: string,
+  subId: string,
+  firstName: string | null,
+) {
+  try {
+    // deno-lint-ignore no-explicit-any
+    const db = admin as any;
+    const { data: gift, error } = await db
+      .from("academy_resources")
+      .select("id, title, description")
+      .eq("is_welcome_gift", true)
+      .eq("is_published", true)
+      .maybeSingle();
+    if (error) {
+      console.warn("[stripe-webhook] welcome-gift lookup failed", error);
+      return;
+    }
+    if (!gift) {
+      // No gift configured. That's fine — admin can flip a row later
+      // and the next signup will get one.
+      return;
+    }
+    await admin.functions.invoke("send-transactional-email", {
+      body: {
+        recipientEmail: email,
+        templateName: "welcome-gift",
+        idempotencyKey: `welcome-gift-${subId}`,
+        templateData: {
+          firstName: firstName ?? undefined,
+          giftTitle: gift.title,
+          giftDescription: gift.description ?? undefined,
+          downloadUrl: `${SITE}/academy/resources?welcome=1&r=${gift.id}`,
+          language: "en",
+        },
+      },
+    });
+  } catch (e) {
+    console.warn("[stripe-webhook] welcome-gift enqueue failed", e);
+  }
+}
+
 async function queueMembershipWelcomeEmail(
   admin: ReturnType<typeof createServiceClient>,
   email: string,
@@ -418,6 +467,31 @@ Deno.serve(async (req) => {
 
   const admin = createServiceClient();
 
+  // ── Idempotency gate ────────────────────────────────────────────────────
+  // Stripe retries any webhook that doesn't 200 within ~30 seconds.
+  // Without this gate, a retry re-runs the full switch — including
+  // queueing welcome / cohort emails — and the member gets duplicates.
+  // We INSERT … ON CONFLICT DO NOTHING; if the insert touches zero rows,
+  // we've seen this event before and we 200 immediately.
+  {
+    const { data: logRow, error: logErr } = await admin
+      .from("stripe_event_log")
+      .insert({ event_id: event.id, event_type: event.type })
+      .select("event_id")
+      .maybeSingle();
+    if (logErr && logErr.code !== "23505") {
+      // Real DB error — don't silently swallow. Let Stripe retry.
+      console.error("[stripe-webhook] event-log insert failed", logErr);
+      return respondError(500, "event-log insert failed", corsHeaders);
+    }
+    if (!logRow) {
+      // Either ON CONFLICT skipped it, or the row already existed.
+      // Either way, we've already processed this event_id.
+      console.log(`[stripe-webhook] duplicate event ${event.id} (${event.type}) — skipping`);
+      return respondJson({ received: true, duplicate: true }, 200, corsHeaders);
+    }
+  }
+
   try {
     switch (event.type) {
       case "customer.subscription.created": {
@@ -447,6 +521,7 @@ Deno.serve(async (req) => {
             // null firstName and the email uses the neutral greeting.
           }
           await queueCohortWelcomeEmail(admin, userEmail, sub.id, firstName);
+          await queueWelcomeGiftEmail(admin, userEmail, sub.id, firstName);
         }
         break;
       }

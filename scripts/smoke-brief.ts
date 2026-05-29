@@ -137,7 +137,10 @@ async function main(): Promise<void> {
       body: JSON.stringify({
         profile: SMOKE_PROFILE,
         language: "en",
-        reportGrade: "basic",
+        // The premium branch is the one that emits the `archetype` SSE event
+        // and the 5 named section events the smoke test asserts on.
+        // The basic branch streams legacy monolithic OpenAI-shaped deltas.
+        reportGrade: "premium",
       }),
       signal: controller.signal,
     });

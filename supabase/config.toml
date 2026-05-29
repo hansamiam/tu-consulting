@@ -234,3 +234,24 @@ verify_jwt = false
 # auth would reject every webhook before constructEvent ran.
 [functions.stripe-webhook]
 verify_jwt = false
+
+# 2026-05-29 lifecycle engagement infrastructure.
+# All four functions self-gate via requireAdminOrService or createUserClient
+# inside the function body; the gateway-level verify_jwt=false unblocks
+# cron + admin invokes without forcing us to maintain a separate dispatch
+# path. Same pattern as the cron block above.
+
+[functions.workshop-broadcast-cron]
+verify_jwt = false
+
+[functions.broadcast-to-members]
+verify_jwt = false
+
+[functions.daily-kpi-digest-cron]
+verify_jwt = false
+
+[functions.workshop-question-submit]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

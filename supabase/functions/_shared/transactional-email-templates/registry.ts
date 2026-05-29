@@ -31,6 +31,10 @@ import { template as briefLeadNudge } from './brief-lead-nudge.tsx'
 import { template as cohortWelcome } from './cohort-welcome.tsx'
 import { template as cohortEventReminder } from './cohort-event-reminder.tsx'
 import { template as renewalReceipt } from './renewal-receipt.tsx'
+import { template as announcementGeneric } from './announcement-generic.tsx'
+import { template as memberKpiDigest } from './member-kpi-digest.tsx'
+import { template as workshopQuestionReceived } from './workshop-question-received.tsx'
+import { template as welcomeGift } from './welcome-gift.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -55,4 +59,11 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'cohort-welcome': cohortWelcome,
   'cohort-event-reminder': cohortEventReminder,
   'renewal-receipt': renewalReceipt,
+  // 2026-05-29 lifecycle engagement — three new templates added under
+  // the email-template approval gate. Each must be flipped to approved
+  // via /admin/email-templates before the first real send.
+  'announcement-generic': announcementGeneric,
+  'member-kpi-digest': memberKpiDigest,
+  'workshop-question-received': workshopQuestionReceived,
+  'welcome-gift': welcomeGift,
 }
