@@ -117,52 +117,54 @@ export const MembershipCTA = ({ language }: Props) => {
 
   return (
     <>
+      {/* 2026-05-29 v2 — quieter card mirroring the Discover detail-sheet
+          AcademyHookCta look (subtle muted bg, single accent line, small
+          right-aligned button). The previous gold-border ALL-CAPS variant
+          jarred against the dossier's editorial tone — Samuel called it
+          "jarring" against the polished pull-up CTA. Pricing + scarcity
+          stay because they're load-bearing trust signals; just at the
+          same weight as the body. */}
       <section className="mt-3 mb-4 pt-6 border-t border-foreground/15 print:break-inside-avoid">
         <div
           data-strategy-cta
-          className="rounded-2xl border border-gold/40 bg-gold/[0.06] p-5 sm:p-6"
+          className="rounded-xl border border-border/60 bg-muted/30 p-5"
         >
-          <div className="mb-2">
+          <div className="mb-1.5">
             <SectionLabel>{copy.eyebrow[language]}</SectionLabel>
           </div>
-          <h2 className="font-heading text-[20px] sm:text-[24px] font-bold leading-[1.2] tracking-tight text-foreground m-0 mb-3">
+          <h2 className="font-heading text-[17px] sm:text-[18px] font-bold leading-tight tracking-tight text-foreground m-0 mb-2">
             {copy.headline[language]}
           </h2>
-          <p className="text-[14.5px] leading-[1.55] text-foreground/75 m-0 mb-4">
+          <p className="text-[13.5px] leading-[1.55] text-foreground/70 m-0 mb-3">
             {copy.body[language]}
           </p>
 
-          {stillOpen ? (
-            <div className="mb-5">
-              <p className="text-[13px] leading-[1.5] text-foreground m-0 mb-1">
-                <span className="font-bold">$39.99 / {t(language, "month", "месяц")}.</span>{" "}
-                <span className="text-foreground/65">
-                  {t(
-                    language,
-                    "First 50 students get 50% off — use the promo code at checkout.",
-                    "Первые 50 студентов получают 50% скидку — используйте промокод на оплате.",
-                  )}
-                </span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[12.5px] leading-[1.45] text-foreground/85 m-0">
+                <span className="font-semibold">$39.99 / {t(language, "month", "месяц")}.</span>
+                {stillOpen && (
+                  <>
+                    {" "}
+                    <span className="text-foreground/60">
+                      {t(language, "First 50 students get 50% off.", "Первые 50 студентов — 50% скидка.")}
+                    </span>
+                  </>
+                )}
               </p>
-              <p className="text-[12.5px] text-gold-dark font-bold m-0 uppercase tracking-wider">
-                {language === "ru"
-                  ? `Осталось ${foundingLeft} из ${foundingCap} мест со скидкой.`
-                  : `${foundingLeft} of ${foundingCap} discounted spots left.`}
-              </p>
+              {stillOpen && (
+                <p className="text-[10.5px] text-gold-dark font-semibold m-0 mt-0.5 uppercase tracking-[0.14em]">
+                  {language === "ru"
+                    ? `Осталось ${foundingLeft} из ${foundingCap}`
+                    : `${foundingLeft} of ${foundingCap} spots left`}
+                </p>
+              )}
             </div>
-          ) : (
-            <p className="text-[13px] leading-[1.5] text-foreground m-0 mb-5">
-              <span className="font-bold">$39.99 / {t(language, "month", "месяц")}.</span>
-            </p>
-          )}
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
             <Button
-              variant="gold"
-              size="lg"
               onClick={startCheckout}
               disabled={loading}
-              className="gap-1.5"
+              size="sm"
+              className="shrink-0 gap-1.5"
             >
               {loading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -174,7 +176,7 @@ export const MembershipCTA = ({ language }: Props) => {
           </div>
 
           {error && (
-            <p className="mt-3 text-[12.5px] text-rose-700 dark:text-rose-400 m-0">
+            <p className="mt-3 text-[12px] text-rose-700 dark:text-rose-400 m-0">
               {error}
             </p>
           )}

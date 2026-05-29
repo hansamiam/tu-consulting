@@ -6,8 +6,6 @@ import {
   FileText,
   Compass,
   BarChart3,
-  Quote,
-  AlertOctagon,
   MapPin,
 } from "lucide-react";
 
@@ -66,72 +64,46 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
   const majorText = profile.major?.trim() || "";
   const gradeText = profile.gradeLevel?.trim() || "";
 
+  // 2026-05-29 v2 — 6 steps → 4. Each line is one short, true sentence.
+  // Trimmed the editorial buzz ("honest diagnosis", "Optimistic-realist
+  // framing", "Funding-first · Research-first · …") that read as filler.
   const steps: Step[] = useMemo(() => [
     {
       id: "intake",
       Icon: FileText,
-      label: t("Reading your intake", "Читаем вашу анкету"),
+      label: t("Reading your intake", "Читаем твою анкету"),
       detail: gradeText && majorText
-        ? t(`${gradeText} · ${majorText}${gpa ? ` · GPA ${gpa}` : ""}`, `${gradeText} · ${majorText}${gpa ? ` · GPA ${gpa}` : ""}`)
-        : t("Degree, scores, signals, free-text", "Уровень, оценки, сигналы, free-text"),
-      doneAt: 1200,
+        ? `${gradeText} · ${majorText}${gpa ? ` · GPA ${gpa}` : ""}`
+        : t("Degree, scores, narrative", "Уровень, оценки, нарратив"),
+      doneAt: 2000,
     },
     {
       id: "context",
       Icon: Compass,
-      label: t("Resolving cultural context", "Определяем культурный контекст"),
-      detail: t(
-        "Framing for first-gen-abroad vs first-gen-college vs global-step",
-        "Рамка для first-gen-abroad / first-gen-college / global-step",
-      ),
-      doneAt: 2800,
+      label: t("Framing your context", "Рамка контекста"),
+      detail: t("Cultural lens + funding posture", "Культурная рамка + finансы"),
+      doneAt: 5000,
     },
     {
-      id: "axes",
+      id: "readiness",
       Icon: BarChart3,
-      label: t("Scoring readiness across 5 axes", "Оцениваем готовность по 5 осям"),
+      label: t("Scoring your readiness", "Оцениваем готовность"),
       detail: ielts || gpa
         ? t(
-            `Academic ${gpa ? `(GPA ${gpa})` : ""}${ielts ? ` · English (IELTS ${ielts})` : ""} · testing · experience · funding`,
-            `Академика ${gpa ? `(GPA ${gpa})` : ""}${ielts ? ` · английский (IELTS ${ielts})` : ""} · тесты · опыт · финансирование`,
+            `Across academics${gpa ? ` (GPA ${gpa})` : ""}, testing, experience`,
+            `По академике${gpa ? ` (GPA ${gpa})` : ""}, тестам, опыту`,
           )
-        : t(
-            "Academic strength · testing · experience · narrative · funding",
-            "Академика · тесты · опыт · нарратив · финансирование",
-          ),
-      doneAt: 5500,
+        : t("Across academics, testing, experience, narrative", "По академике, тестам, опыту, нарративу"),
+      doneAt: 9500,
     },
     {
-      id: "diagnosis",
-      Icon: Quote,
-      label: t("Drafting your honest diagnosis", "Готовим честный диагноз"),
-      detail: countryList
-        ? t(`Optimistic-realist framing for ${countryList}`, `Optimistic-realist рамка для ${countryList}`)
-        : t(
-            "Two-to-three sentence pull-quote — honest about the gap, the lever, and the stakes",
-            "2-3 предложения — про рычаг, пробел и ставки",
-          ),
-      doneAt: 9000,
-    },
-    {
-      id: "weaknesses",
-      Icon: AlertOctagon,
-      label: t("Naming weaknesses and what they cost", "Называем слабости и их цену"),
-      detail: t(
-        "Each gap with the specific application-time consequence",
-        "Каждый пробел с конкретной ценой при подаче",
-      ),
-      doneAt: 12500,
-    },
-    {
-      id: "pathway",
+      id: "strategy",
       Icon: MapPin,
-      label: t("Composing your strategic pathway", "Складываем стратегию"),
-      detail: t(
-        "Funding-first · Research-first · Applied · Affordability-first — one frame",
-        "Funding-first · Research-first · Applied · Affordability-first — одна рамка",
-      ),
-      doneAt: 15500,
+      label: t("Writing your strategy", "Пишем твою стратегию"),
+      detail: countryList
+        ? t(`Honest diagnosis · play · pivot · blindspot — ${countryList}`, `Диагноз · play · pivot · blindspot — ${countryList}`)
+        : t("Honest diagnosis · play · pivot · blindspot", "Диагноз · play · pivot · blindspot"),
+      doneAt: 15000,
     },
   ], [countryList, gpa, ielts, majorText, gradeText, isRu]);
 

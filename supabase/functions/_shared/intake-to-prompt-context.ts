@@ -17,13 +17,22 @@ export interface PromptContext {
   fieldOfStudy: string;
   gpa: number | null;
   gpaScale: "4.0" | "5.0" | "10.0" | "100";
-  /** Collapsed English level — single enum for the prompt. */
+  /** Collapsed English level — single enum for the prompt.
+   *  2026-05-29 v2: "other" added for the new Step-1 widget that lets
+   *  users describe a non-IELTS/TOEFL situation (Duolingo, half-American,
+   *  English-medium schooling). The actual text lives in
+   *  englishOtherNote below — prompt should read both. */
   englishLevel:
     | "ielts_7_plus"
     | "ielts_6_0_to_6_5"
     | "ielts_below_6"
     | "toefl_equiv"
-    | "not_taken_yet";
+    | "not_taken_yet"
+    | "other";
+  /** When englishLevel === "other", the raw free-text the user wrote
+   *  on Step 1 (e.g. "Duolingo 130", "half-American"). undefined for
+   *  all other englishLevel values. */
+  englishOtherNote?: string;
   /** Raw test profile, only set fields included. */
   testProfile: {
     ielts?: number; toefl?: number; sat?: number;
@@ -105,7 +114,8 @@ function inferEnglishLevel(p: any): PromptContext["englishLevel"] {
     p.englishProficiency === "ielts_6_0_to_6_5" ||
     p.englishProficiency === "ielts_below_6" ||
     p.englishProficiency === "toefl_equiv" ||
-    p.englishProficiency === "not_taken_yet"
+    p.englishProficiency === "not_taken_yet" ||
+    p.englishProficiency === "other"
   ) {
     return p.englishProficiency;
   }
@@ -218,6 +228,9 @@ export function projectIntake(profile: any, language: Language): PromptContext {
     gpa: profile.gpa != null && profile.gpa !== "" ? parseFloat(profile.gpa) : null,
     gpaScale: (profile.gpaScale || "4.0") as PromptContext["gpaScale"],
     englishLevel: inferEnglishLevel(profile),
+    englishOtherNote: profile.englishOtherNote && String(profile.englishOtherNote).trim()
+      ? String(profile.englishOtherNote).trim().slice(0, 240)
+      : undefined,
     testProfile: {
       ielts: profile.ielts ? parseFloat(profile.ielts) : undefined,
       toefl: profile.toefl ? parseFloat(profile.toefl) : undefined,
