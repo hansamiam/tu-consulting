@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,13 +15,10 @@ interface Props {
 }
 
 /* CTA copy rotation pool. Single CTA visible at a time — we pick one
- * variant per mount. Variants stay deliberately offer-AGNOSTIC for
- * now: per `feedback_founding_20_dead.md` the founding-20 framing is
- * killed (rebranded to "Top Uni Membership"). The "first 50 students
- * get 50% off" launch incentive ships via promo code at checkout — the
- * underlying Stripe SKU is $39.99/mo per `Pricing.tsx`. CTA button
- * routes directly to create-subscription-checkout (no /pricing detour
- * — Samuel explicitly asked for single-click). */
+ * variant per mount. Stripe SKU is $39.99/mo (price_1TbkojQVirFUxpBg5iPsYmBO).
+ * No founding-50 scarcity copy — that framing was killed 2026-05-29.
+ * CTA button routes direct to create-subscription-checkout (no /pricing
+ * detour — Samuel asked for single-click). */
 interface CtaCopy {
   eyebrow: { en: string; ru: string };
   headline: { en: string; ru: string };
@@ -47,39 +44,19 @@ const CTA_POOL: CtaCopy[] = [
 
 export const MembershipCTA = ({ language }: Props) => {
   const { user } = useAuth();
-  const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
-  const [foundingCap, setFoundingCap] = useState<number>(50);
   const [loading, setLoading] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase
-      .from("founding_member_counter")
-      .select("claimed_count, cap")
-      .eq("id", 1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setFoundingLeft(Math.max(0, (data.cap as number) - (data.claimed_count as number)));
-          setFoundingCap(data.cap as number);
-        }
-      });
-  }, []);
 
   const copy = useMemo(
     () => CTA_POOL[Math.floor(Math.random() * CTA_POOL.length)],
     [],
   );
 
-  const stillOpen = foundingLeft != null && foundingLeft > 0;
-
   const startCheckout = async () => {
     setError(null);
     track("strategy_cta_clicked", {
       authed: !!user,
-      foundingLeft,
-      stillOpen,
       language,
     });
 
@@ -118,9 +95,7 @@ export const MembershipCTA = ({ language }: Props) => {
     }
   };
 
-  const ctaLabel = stillOpen
-    ? t(language, "Claim 50% Off — Join Top Uni", "Получить 50% — вступить в Top Uni")
-    : t(language, "Join Top Uni Membership", "Вступить в Top Uni Membership");
+  const ctaLabel = t(language, "Join Top Uni Membership", "Вступить в Top Uni Membership");
 
   return (
     <>
@@ -139,29 +114,9 @@ export const MembershipCTA = ({ language }: Props) => {
             {copy.body[language]}
           </p>
 
-          {stillOpen ? (
-            <div className="mb-5">
-              <p className="text-[13px] leading-[1.5] text-foreground m-0 mb-1">
-                <span className="font-bold">$39.99 / {t(language, "month", "месяц")}.</span>{" "}
-                <span className="text-foreground/65">
-                  {t(
-                    language,
-                    "First 50 students get 50% off — use the promo code at checkout.",
-                    "Первые 50 студентов получают 50% скидку — используйте промокод при оплате.",
-                  )}
-                </span>
-              </p>
-              <p className="text-[12.5px] text-gold-dark font-bold m-0 uppercase tracking-wider">
-                {language === "ru"
-                  ? `Осталось ${foundingLeft} из ${foundingCap} мест со скидкой.`
-                  : `${foundingLeft} of ${foundingCap} discounted spots left.`}
-              </p>
-            </div>
-          ) : (
-            <p className="text-[13px] leading-[1.5] text-foreground m-0 mb-5">
-              <span className="font-bold">$39.99 / {t(language, "month", "месяц")}.</span>
-            </p>
-          )}
+          <p className="text-[13px] leading-[1.5] text-foreground m-0 mb-5">
+            <span className="font-bold">$39.99 / {t(language, "month", "месяц")}.</span>
+          </p>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
             <Button

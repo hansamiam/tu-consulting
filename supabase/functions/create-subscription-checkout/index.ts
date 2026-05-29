@@ -13,13 +13,15 @@ import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
 // Early-Access tier — $19/mo, $360/yr (annual price TBD).
 // Internal SKU identifier 'founding' preserved (DB rows reference it).
-// Annual price ID is env-wired so it can land via `supabase secrets set`
-// without a code change. If unset, year-interval requests 400 with a
-// clear message — safer than silently aliasing annual → monthly and
-// billing customers the wrong amount.
+// Live-mode prices baked in as defaults so a missing env secret can't
+// silently revert us to the old $19/mo SKU. Env vars still win if set
+// (lets us hotpatch without redeploy).
+//   - Monthly $39.99 → price_1TbkojQVirFUxpBg5iPsYmBO (2026-05-27 SKU)
+//   - Annual $360   → price_1Tc6ATQVirFUxpBg5QCetihY
+// Both attached to product "Founding Pro" (prod_UPIZ0f2qRvxvAc).
 const FOUNDING_PRICES: { month: string; year: string } = {
-  month: Deno.env.get("STRIPE_PRICE_ID_MONTHLY") ?? "price_1TQTyAQVirFUxpBg4YtW8JFo",
-  year: Deno.env.get("STRIPE_PRICE_ID_ANNUAL") ?? "",
+  month: Deno.env.get("STRIPE_PRICE_ID_MONTHLY") ?? "price_1TbkojQVirFUxpBg5iPsYmBO",
+  year: Deno.env.get("STRIPE_PRICE_ID_ANNUAL") ?? "price_1Tc6ATQVirFUxpBg5QCetihY",
 };
 
 Deno.serve(async (req) => {
@@ -62,7 +64,7 @@ Deno.serve(async (req) => {
       // to 50 and any future shift would re-stale this string. The
       // claim_founding_spot RPC returns null when the cohort is full
       // regardless of cap.
-      return respondError(409, "Early-access cohort is sold out. Join the waitlist for the launch-discount tier (50% off year one for the next 200 members).", corsHeaders);
+      return respondError(409, "Membership signups are temporarily paused while we expand capacity. Email hello@topuni.org to be notified when the next spots open.", corsHeaders);
     }
     const reservedFoundingNumber = claimData as number;
 

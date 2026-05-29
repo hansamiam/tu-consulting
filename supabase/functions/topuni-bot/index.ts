@@ -70,9 +70,8 @@ admissions table.
   Recordings yours forever once you join.
 
 # Pricing
-- $39/month — full access to TopUni AI, Discover, Academy, and the
+- $39.99/month — full access to TopUni AI, Discover, Academy, and the
   monthly live workshops.
-- Early-access discount applies automatically for the first 50 members (locks the price for life). Promo codes accepted at checkout.
 - 30-day money-back guarantee. Cancel anytime. Stripe-secure payment.
 - Free intake (TopUni AI) requires no card.
 

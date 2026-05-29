@@ -19,7 +19,6 @@ import {
   Shield,
   ArrowRight,
   Lock,
-  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -39,11 +38,10 @@ interface PricingProps { language?: "en" | "ru"; }
 // includes" sheet, not an offer-stack.
 const COPY = {
   en: {
-    badge: (cap: number) => `Early access · first ${cap} members lock in this price for life`,
+    badge: () => `Top Uni Membership`,
     h1a: "Plan your education, your funding, and your career",
     h1b: "with the alumni who got in.",
     sub: "Yale, Cambridge, and Harvard alumni × AI. Admissions strategy that fits, at a price traditional consulting prices students out of.",
-    spotsLeft: (left: number, cap: number) => `Only ${left} of ${cap} early-access spots left`,
     tier: "TopUni Membership",
     tierTagline: "Everything you need to plan, apply, and win.",
     /** Membership inclusions — short, scannable, no individual
@@ -62,27 +60,21 @@ const COPY = {
       { title: "Recordings library, kept forever",       body: "The library compounds with every cohort." },
       { title: "Direct line to the team",                body: "Submit questions, vote on what the next workshop covers, get product input rights." },
     ],
-    foundingPriceLabel: "Launch price",
+    foundingPriceLabel: "Membership",
     perMonth: "/month",
-    publicNote: "Promo codes accepted at checkout.",
-    publicNoteRest: "Cancel anytime — no long-term lock-in.",
-    capacityClaimed: (claimed: number, cap: number) => `${claimed} / ${cap} claimed`,
-    capacityLeft: (left: number) => `${left} left`,
+    publicNote: "Cancel anytime.",
+    publicNoteRest: "No long-term lock-in.",
     cta: {
       loading: "",
-      isFounding: "You're an early-access member · price locked",
+      isFounding: "You're a member · Manage in Account",
       isMember: "You're a member · Manage in Account",
-      soldOut: "Sold out — join waitlist",
       claim: "Become a member",
     },
     riskReversalBold: "30-day money-back guarantee.",
     riskReversal: "Full refund, no questions asked. Cancel anytime after.",
     stripeBilling: "Stripe secure checkout · billed monthly · cancel anytime",
-    finalH2a: "First",
-    finalH2b: "early-access members lock the launch price for life.",
-    finalH2c: "",
-    finalLeftPrefix: "early-access spots left. Promo codes accepted at checkout.",
-    finalNoLeft: "Early-access cohort filled. Membership is still open at $39.99/mo — promo codes accepted at checkout.",
+    finalH2: "Join the Top Uni Membership.",
+    finalSub: "Monthly workshops, office hours, and member-only scholarship insights.",
     finalGuarantee: "30-day money-back guarantee · Cancel anytime",
     notReady: "Not ready?",
     notReadyMid: "still gets you a personalized strategy from TopUni AI and your top 3 scholarship matches.",
@@ -93,11 +85,10 @@ const COPY = {
     free: "Free",
   },
   ru: {
-    badge: (cap: number) => `Ранний доступ · первые ${cap} закрепляют эту цену навсегда`,
+    badge: () => `Top Uni Membership`,
     h1a: "Образование, финансирование, карьера —",
     h1b: "с выпускниками, которые поступили.",
     sub: "Выпускники Yale, Cambridge и Harvard × AI. Стратегия, которая реально подходит — без цен традиционного консалтинга.",
-    spotsLeft: (left: number, cap: number) => `Осталось ${left} из ${cap} мест раннего доступа`,
     tier: "Членство TopUni",
     tierTagline: "Всё необходимое чтобы спланировать, подать и выиграть.",
     includes: [
@@ -108,27 +99,21 @@ const COPY = {
       { title: "Библиотека записей навсегда",             body: "Библиотека пополняется каждый месяц." },
       { title: "Прямая линия с командой",                 body: "Задавайте вопросы, голосуйте за темы воркшопов, влияйте на продукт." },
     ],
-    foundingPriceLabel: "Цена запуска",
+    foundingPriceLabel: "Подписка",
     perMonth: "/месяц",
-    publicNote: "Промокоды принимаются на оплате.",
-    publicNoteRest: "Отмена в любой момент — без долгосрочных обязательств.",
-    capacityClaimed: (claimed: number, cap: number) => `${claimed} / ${cap} занято`,
-    capacityLeft: (left: number) => `${left} осталось`,
+    publicNote: "Отмена в любой момент.",
+    publicNoteRest: "Без долгосрочных обязательств.",
     cta: {
       loading: "",
-      isFounding: "Вы — член раннего доступа · цена закреплена",
+      isFounding: "Вы участник · Управление в Аккаунте",
       isMember: "Вы участник · Управление в Аккаунте",
-      soldOut: "Распродано — в лист ожидания",
       claim: "Стать членом",
     },
     riskReversalBold: "Гарантия возврата 30 дней.",
     riskReversal: "Полный возврат, без лишних вопросов. Отмена в любой момент.",
     stripeBilling: "Безопасная оплата Stripe · ежемесячно · отмена в любой момент",
-    finalH2a: "Первые",
-    finalH2b: "членов раннего доступа закрепляют цену запуска навсегда.",
-    finalH2c: "",
-    finalLeftPrefix: "мест раннего доступа осталось. Промокоды принимаются на оплате.",
-    finalNoLeft: "Когорта раннего доступа заполнена. Членство открыто за $39.99/мес — промокоды принимаются на оплате.",
+    finalH2: "Вступите в Top Uni Membership.",
+    finalSub: "Ежемесячные воркшопы, office hours и инсайды по стипендиям только для участников.",
     finalGuarantee: "Гарантия 30 дней · отмена в любой момент",
     notReady: "Ещё не готовы?",
     notReadyMid: "даёт вам персональную стратегию от TopUni AI и топ-3 подобранные стипендии.",
@@ -145,13 +130,6 @@ const Pricing = ({ language = "en" }: PricingProps) => {
   const { user, subscription } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [foundingLeft, setFoundingLeft] = useState<number | null>(null);
-  // Cohort cap default — 50 for the early-access tier (re-bumped from
-  // 20 on 2026-05-27 per Sam's updated "first 50 signups" copy). The
-  // production value still comes from `founding_member_counter.cap` in
-  // Supabase — this is just the fallback for the initial render before
-  // the count fetch resolves.
-  const [foundingCap, setFoundingCap] = useState<number>(50);
   // Billing interval — annual saves ~23% vs month-to-month. Default
   // monthly (lower commitment threshold, easier conversion).
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
@@ -159,22 +137,9 @@ const Pricing = ({ language = "en" }: PricingProps) => {
 
   useEffect(() => {
     const prev = document.title;
-    // 2026-05-23: SHOW_FULL_PRICING flipped to true (see below) —
-    // the Membership page is live. Title now reflects the real
-    // Membership offer; the legacy Coming Soon branch is removed.
     document.title = language === "ru"
       ? "Цены — TopUni Membership · Стратегия поступления и стипендий"
       : "Pricing — TopUni Membership · Admissions + scholarship strategy";
-    supabase.from("founding_member_counter")
-      .select("claimed_count, cap")
-      .eq("id", 1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setFoundingLeft(Math.max(0, data.cap - data.claimed_count));
-          setFoundingCap(data.cap);
-        }
-      });
     return () => { document.title = prev; };
   }, [language]);
 
@@ -217,30 +182,20 @@ const Pricing = ({ language = "en" }: PricingProps) => {
     window.location.href = url;
   };
 
-  // "Currently a founding-tier subscriber" = tier=founding AND active.
-  // Was previously checking just the tier; a canceled founding user
-  // would have kept the founding CTA + crown rendered as if they were
-  // still in the cohort.
-  const isFounding = subscription.tier === "founding" && subscription.is_active;
-  // Regular paid Pro members were previously seeing the "Become a
-  // member" CTA on the pricing page, which is misleading — they
-  // already are members. Treat any active paid tier (founding OR pro)
-  // as a member so the CTA points to Account management instead.
-  const isPaidMember = isFounding || (subscription.tier === "pro" && subscription.is_active);
-  const claimed = foundingLeft != null ? foundingCap - foundingLeft : 0;
-  const claimedPct = foundingLeft != null ? Math.round((claimed / foundingCap) * 100) : 0;
+  // Active membership = any paid tier with active status. Both founding
+  // and pro tiers route to Account management instead of a fresh CTA.
+  const isPaidMember =
+    (subscription.tier === "founding" && subscription.is_active) ||
+    (subscription.tier === "pro" && subscription.is_active);
 
-  // CTA: founding members keep the Crown (genuine status moment).
-  // Regular Pro members get a "You're a member" label that links to
-  // Account where they can manage billing. Anonymous + free users see
-  // the conversion CTA. Plain typography — the gold button does the
-  // visual work; previous Award icon read as "AI magic" and
-  // competed with the actual AI surfaces on the site.
-  const ctaLabel = loading ? <Loader2 className="w-4 h-4 animate-spin" />
-    : isFounding ? <><Crown className="w-4 h-4" /> {t.cta.isFounding}</>
-    : isPaidMember ? <><Check className="w-4 h-4" /> {t.cta.isMember}</>
-    : foundingLeft === 0 ? t.cta.soldOut
-    : t.cta.claim;
+  // CTA: paid members get "Manage in Account"; everyone else sees
+  // "Become a member". The "Sold out" + "Early-access founding member"
+  // states were retired with the founding-50 scarcity framing.
+  const ctaLabel = loading
+    ? <Loader2 className="w-4 h-4 animate-spin" />
+    : isPaidMember
+      ? <><Check className="w-4 h-4" /> {t.cta.isMember}</>
+      : t.cta.claim;
 
   // 2026-05-23 stage-2 flip: Membership offer locked (single
   // tier, founding-cohort scarcity, 6 perks aligned with the 3
@@ -292,7 +247,7 @@ const Pricing = ({ language = "en" }: PricingProps) => {
           <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center relative">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <Badge className="mb-5 bg-gold/15 text-gold-dark border-gold/35 px-3 py-1">
-                <Crown className="w-3 h-3 mr-1.5" /> {t.badge(foundingCap)}
+                <Crown className="w-3 h-3 mr-1.5" /> {t.badge()}
               </Badge>
               <h1 className="font-heading text-[clamp(2.25rem,5.5vw,4rem)] font-bold tracking-[-0.025em] leading-[1.05]">
                 {t.h1a} <span className="text-gold-dark">{t.h1b}</span>
@@ -318,12 +273,6 @@ const Pricing = ({ language = "en" }: PricingProps) => {
             className="max-w-3xl mx-auto"
           >
             <div className="relative bg-card border border-border rounded-3xl p-7 sm:p-10 shadow-sm">
-              {foundingLeft != null && foundingLeft > 0 && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gold text-primary text-xs font-bold tracking-wide uppercase px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
-                  <Zap className="h-3 w-3" /> {t.spotsLeft(foundingLeft, foundingCap)}
-                </div>
-              )}
-
               {/* Tier name + tagline — quiet header, no Crown icon
                   visual gimmick. The header is information, the price
                   block carries the conversion weight. */}
@@ -403,23 +352,9 @@ const Pricing = ({ language = "en" }: PricingProps) => {
                 ))}
               </ul>
 
-              {/* Early-access progress bar — quiet scarcity, kept
-                  because it's real (capped) not fabricated. */}
-              {foundingLeft != null && (
-                <div className="mb-5">
-                  <div className="flex items-center justify-between text-[11px] mb-1.5">
-                    <span className="text-muted-foreground tabular-nums">{t.capacityClaimed(claimed, foundingCap)}</span>
-                    <span className="text-gold-dark font-semibold tabular-nums">{t.capacityLeft(foundingLeft)}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-gold-dark to-gold transition-all" style={{ width: `${claimedPct}%` }} />
-                  </div>
-                </div>
-              )}
-
-              <Button variant="gold" size="lg" className="w-full gap-2 text-base h-12 shadow-md" disabled={loading || foundingLeft === 0 || isFounding} onClick={isPaidMember ? () => navigate(language === "ru" ? "/account/ru" : "/account") : startCheckout}>
+              <Button variant="gold" size="lg" className="w-full gap-2 text-base h-12 shadow-md" disabled={loading} onClick={isPaidMember ? () => navigate(language === "ru" ? "/account/ru" : "/account") : startCheckout}>
                 {ctaLabel}
-                {!isFounding && foundingLeft !== 0 && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
+                {!isPaidMember && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
               </Button>
               {/* Trust strip retired (round 33). The "30-day money-back
                   · Stripe secure · cancel anytime" line was filler that
@@ -443,18 +378,14 @@ const Pricing = ({ language = "en" }: PricingProps) => {
             <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <Lock className="w-7 h-7 text-gold-dark mx-auto mb-5" />
               <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight leading-[1.1] mb-5">
-                {t.finalH2a} {foundingCap} {t.finalH2b} <span className="text-gold-dark">{t.finalH2c}</span>
+                {t.finalH2}
               </h2>
               <p className="text-muted-foreground text-base sm:text-lg mb-9 max-w-xl mx-auto leading-relaxed">
-                {foundingLeft != null ? (
-                  <><span className="text-foreground font-semibold tabular-nums">{foundingLeft}</span> {t.finalLeftPrefix}</>
-                ) : (
-                  t.finalNoLeft
-                )}
+                {t.finalSub}
               </p>
-              <Button variant="gold" size="lg" className="gap-2 text-base h-12 px-10 shadow-md" disabled={loading || foundingLeft === 0 || isFounding} onClick={isPaidMember ? () => navigate(language === "ru" ? "/account/ru" : "/account") : startCheckout}>
+              <Button variant="gold" size="lg" className="gap-2 text-base h-12 px-10 shadow-md" disabled={loading} onClick={isPaidMember ? () => navigate(language === "ru" ? "/account/ru" : "/account") : startCheckout}>
                 {ctaLabel}
-                {!isFounding && foundingLeft !== 0 && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
+                {!isPaidMember && !loading && <ArrowRight className="h-4 w-4 ml-1" />}
               </Button>
               <p className="text-xs text-muted-foreground mt-6">
                 {t.notReady} <strong className="text-foreground">{t.free}</strong> {t.notReadyMid}

@@ -153,6 +153,20 @@ export type Database = {
             referencedRelation: "scholarships_url_check_queue"
             referencedColumns: ["scholarship_id"]
           },
+          {
+            foreignKeyName: "academy_waitlist_referring_scholarship_id_fkey"
+            columns: ["referring_scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "academy_waitlist_referring_scholarship_id_fkey"
+            columns: ["referring_scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
         ]
       }
       academy_workshops: {
@@ -386,6 +400,20 @@ export type Database = {
             columns: ["scholarship_id"]
             isOneToOne: false
             referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "application_tracker_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "application_tracker_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
             referencedColumns: ["scholarship_id"]
           },
         ]
@@ -1050,6 +1078,91 @@ export type Database = {
         }
         Relationships: []
       }
+      deadline_audit_log: {
+        Row: {
+          audit_id: string
+          audited_at: string
+          canonical_at_audit: string | null
+          confidence: number | null
+          notes: string | null
+          observed_deadline: string | null
+          observed_source: string | null
+          scholarship_id: string
+          status: string
+          stored_at_audit: string | null
+          verifier: string
+        }
+        Insert: {
+          audit_id?: string
+          audited_at?: string
+          canonical_at_audit?: string | null
+          confidence?: number | null
+          notes?: string | null
+          observed_deadline?: string | null
+          observed_source?: string | null
+          scholarship_id: string
+          status: string
+          stored_at_audit?: string | null
+          verifier: string
+        }
+        Update: {
+          audit_id?: string
+          audited_at?: string
+          canonical_at_audit?: string | null
+          confidence?: number | null
+          notes?: string | null
+          observed_deadline?: string | null
+          observed_source?: string | null
+          scholarship_id?: string
+          status?: string
+          stored_at_audit?: string | null
+          verifier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_active_v"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -1224,6 +1337,20 @@ export type Database = {
             referencedRelation: "scholarships_url_check_queue"
             referencedColumns: ["scholarship_id"]
           },
+          {
+            foreignKeyName: "featured_rotations_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "featured_rotations_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
         ]
       }
       founding_member_counter: {
@@ -1243,6 +1370,60 @@ export type Database = {
           cap?: number
           claimed_count?: number
           id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          category: string | null
+          content: string[]
+          created_at: string
+          created_by: string | null
+          excerpt: string | null
+          hero_image_url: string | null
+          id: string
+          is_published: boolean
+          language: string
+          published_at: string | null
+          read_time: string | null
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content?: string[]
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          hero_image_url?: string | null
+          id?: string
+          is_published?: boolean
+          language?: string
+          published_at?: string | null
+          read_time?: string | null
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string[]
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          hero_image_url?: string | null
+          id?: string
+          is_published?: boolean
+          language?: string
+          published_at?: string | null
+          read_time?: string | null
+          slug?: string
+          sort_order?: number
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -1754,6 +1935,20 @@ export type Database = {
             referencedRelation: "scholarships_url_check_queue"
             referencedColumns: ["scholarship_id"]
           },
+          {
+            foreignKeyName: "scholarship_archetype_insights_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_archetype_insights_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
         ]
       }
       scholarship_checklists: {
@@ -1808,6 +2003,20 @@ export type Database = {
             columns: ["scholarship_id"]
             isOneToOne: true
             referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_checklists_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_checklists_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "suspicious_eligibility_rows"
             referencedColumns: ["scholarship_id"]
           },
         ]
@@ -1872,6 +2081,96 @@ export type Database = {
             referencedRelation: "scholarships_url_check_queue"
             referencedColumns: ["scholarship_id"]
           },
+          {
+            foreignKeyName: "scholarship_deep_dives_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_deep_dives_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
+      }
+      scholarship_edits: {
+        Row: {
+          edited_at: string
+          editor_email: string
+          editor_user_id: string | null
+          field_name: string
+          id: string
+          scholarship_id: string
+          value_after: Json | null
+          value_before: Json | null
+        }
+        Insert: {
+          edited_at?: string
+          editor_email: string
+          editor_user_id?: string | null
+          field_name: string
+          id?: string
+          scholarship_id: string
+          value_after?: Json | null
+          value_before?: Json | null
+        }
+        Update: {
+          edited_at?: string
+          editor_email?: string
+          editor_user_id?: string | null
+          field_name?: string
+          id?: string
+          scholarship_id?: string
+          value_after?: Json | null
+          value_before?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scholarship_edits_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_edits_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_active_v"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_edits_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_edits_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_edits_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_edits_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
         ]
       }
       scholarship_events: {
@@ -1932,6 +2231,20 @@ export type Database = {
             columns: ["scholarship_id"]
             isOneToOne: false
             referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_events_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_events_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
             referencedColumns: ["scholarship_id"]
           },
         ]
@@ -2005,6 +2318,20 @@ export type Database = {
             referencedRelation: "scholarships_url_check_queue"
             referencedColumns: ["scholarship_id"]
           },
+          {
+            foreignKeyName: "scholarship_evidence_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_evidence_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
         ]
       }
       scholarship_mini_guides: {
@@ -2015,6 +2342,7 @@ export type Database = {
           schema_version: number
           scholarship_id: string
           source: string
+          top_insights: string[] | null
         }
         Insert: {
           content: Json
@@ -2023,6 +2351,7 @@ export type Database = {
           schema_version?: number
           scholarship_id: string
           source?: string
+          top_insights?: string[] | null
         }
         Update: {
           content?: Json
@@ -2031,6 +2360,7 @@ export type Database = {
           schema_version?: number
           scholarship_id?: string
           source?: string
+          top_insights?: string[] | null
         }
         Relationships: [
           {
@@ -2059,6 +2389,20 @@ export type Database = {
             columns: ["scholarship_id"]
             isOneToOne: true
             referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_mini_guides_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_mini_guides_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "suspicious_eligibility_rows"
             referencedColumns: ["scholarship_id"]
           },
         ]
@@ -2207,6 +2551,20 @@ export type Database = {
             referencedRelation: "scholarships_url_check_queue"
             referencedColumns: ["scholarship_id"]
           },
+          {
+            foreignKeyName: "scholarship_stats_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_stats_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: true
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
         ]
       }
       scholarship_submissions: {
@@ -2305,6 +2663,20 @@ export type Database = {
             referencedRelation: "scholarships_url_check_queue"
             referencedColumns: ["scholarship_id"]
           },
+          {
+            foreignKeyName: "scholarship_submissions_promoted_to_fkey"
+            columns: ["promoted_to"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarship_submissions_promoted_to_fkey"
+            columns: ["promoted_to"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
         ]
       }
       scholarships: {
@@ -2341,12 +2713,16 @@ export type Database = {
           data_completeness_score: number | null
           data_source: string
           deadline_type: string | null
+          deadlines_detail: Json | null
           duration_text: string | null
           early_deadline: string | null
           early_decision_type: string | null
           effort_level: string | null
           effort_reason: string | null
+          eligibility_audit_notes: string | null
+          eligibility_audit_status: string | null
           eligibility_requirements: string | null
+          eligibility_verified_at: string | null
           eligible_countries: string[] | null
           embedded_at: string | null
           embedding: string | null
@@ -2361,6 +2737,7 @@ export type Database = {
           how_to_win: string | null
           ideal_candidate_profile: string | null
           interview_required: boolean | null
+          is_deadline_inferred: boolean
           is_featured: boolean
           is_flagship_program: boolean
           is_published: boolean
@@ -2443,12 +2820,16 @@ export type Database = {
           data_completeness_score?: number | null
           data_source?: string
           deadline_type?: string | null
+          deadlines_detail?: Json | null
           duration_text?: string | null
           early_deadline?: string | null
           early_decision_type?: string | null
           effort_level?: string | null
           effort_reason?: string | null
+          eligibility_audit_notes?: string | null
+          eligibility_audit_status?: string | null
           eligibility_requirements?: string | null
+          eligibility_verified_at?: string | null
           eligible_countries?: string[] | null
           embedded_at?: string | null
           embedding?: string | null
@@ -2463,6 +2844,7 @@ export type Database = {
           how_to_win?: string | null
           ideal_candidate_profile?: string | null
           interview_required?: boolean | null
+          is_deadline_inferred?: boolean
           is_featured?: boolean
           is_flagship_program?: boolean
           is_published?: boolean
@@ -2545,12 +2927,16 @@ export type Database = {
           data_completeness_score?: number | null
           data_source?: string
           deadline_type?: string | null
+          deadlines_detail?: Json | null
           duration_text?: string | null
           early_deadline?: string | null
           early_decision_type?: string | null
           effort_level?: string | null
           effort_reason?: string | null
+          eligibility_audit_notes?: string | null
+          eligibility_audit_status?: string | null
           eligibility_requirements?: string | null
+          eligibility_verified_at?: string | null
           eligible_countries?: string[] | null
           embedded_at?: string | null
           embedding?: string | null
@@ -2565,6 +2951,7 @@ export type Database = {
           how_to_win?: string | null
           ideal_candidate_profile?: string | null
           interview_required?: boolean | null
+          is_deadline_inferred?: boolean
           is_featured?: boolean
           is_flagship_program?: boolean
           is_published?: boolean
@@ -2763,6 +3150,20 @@ export type Database = {
             referencedRelation: "scholarships_url_check_queue"
             referencedColumns: ["scholarship_id"]
           },
+          {
+            foreignKeyName: "scholarships_research_intake_live_scholarship_id_fkey"
+            columns: ["live_scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarships_research_intake_live_scholarship_id_fkey"
+            columns: ["live_scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
         ]
       }
       scholarships_staging: {
@@ -2848,6 +3249,20 @@ export type Database = {
             columns: ["scholarship_id"]
             isOneToOne: false
             referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarships_staging_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "scholarships_staging_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
             referencedColumns: ["scholarship_id"]
           },
           {
@@ -3132,6 +3547,48 @@ export type Database = {
             referencedColumns: ["source_id"]
           },
         ]
+      }
+      strategy_reports_v2: {
+        Row: {
+          applicant_type_label: string
+          email: string | null
+          generated_at: string
+          id: string
+          language: string
+          payload: Json
+          profile_hash: string
+          read_token: string
+          readiness_score: number
+          target_degree: string
+          user_id: string | null
+        }
+        Insert: {
+          applicant_type_label: string
+          email?: string | null
+          generated_at?: string
+          id?: string
+          language: string
+          payload: Json
+          profile_hash: string
+          read_token?: string
+          readiness_score: number
+          target_degree: string
+          user_id?: string | null
+        }
+        Update: {
+          applicant_type_label?: string
+          email?: string | null
+          generated_at?: string
+          id?: string
+          language?: string
+          payload?: Json
+          profile_hash?: string
+          read_token?: string
+          readiness_score?: number
+          target_degree?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       student_documents: {
         Row: {
@@ -3671,6 +4128,65 @@ export type Database = {
         }
         Relationships: []
       }
+      latest_deadline_audit: {
+        Row: {
+          audit_id: string | null
+          audited_at: string | null
+          canonical_at_audit: string | null
+          confidence: number | null
+          notes: string | null
+          observed_deadline: string | null
+          observed_source: string | null
+          scholarship_id: string | null
+          status: string | null
+          stored_at_audit: string | null
+          verifier: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_active_v"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_needing_embedding"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships_url_check_queue"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_deadlines"
+            referencedColumns: ["scholarship_id"]
+          },
+          {
+            foreignKeyName: "deadline_audit_log_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "suspicious_eligibility_rows"
+            referencedColumns: ["scholarship_id"]
+          },
+        ]
+      }
       scholarship_verification_coverage_v: {
         Row: {
           broken_count: number | null
@@ -3966,6 +4482,39 @@ export type Database = {
         }
         Relationships: []
       }
+      suspicious_deadlines: {
+        Row: {
+          application_deadline: string | null
+          best_url: string | null
+          canonical_deadline_iso: string | null
+          deadline_type: string | null
+          host_country: string | null
+          is_deadline_inferred: boolean | null
+          last_audit_at: string | null
+          last_audit_confidence: number | null
+          last_audit_status: string | null
+          last_observed_deadline: string | null
+          provider_name: string | null
+          reasons: string[] | null
+          scholarship_id: string | null
+          scholarship_name: string | null
+        }
+        Relationships: []
+      }
+      suspicious_eligibility_rows: {
+        Row: {
+          eligibility_audit_status: string | null
+          eligibility_verified_at: string | null
+          eligible_countries: string[] | null
+          flags: string[] | null
+          host_country: string | null
+          is_published: boolean | null
+          provider_name: string | null
+          scholarship_id: string | null
+          scholarship_name: string | null
+        }
+        Relationships: []
+      }
       university_enrichment_coverage_v: {
         Row: {
           enriched_count: number | null
@@ -4005,6 +4554,10 @@ export type Database = {
         Args: { p_scholarship_id: string }
         Returns: number
       }
+      deadline_of_type: {
+        Args: { p_deadlines: Json; p_type: string }
+        Returns: string
+      }
       delete_archetype_insight: { Args: { p_msg_id: number }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -4035,6 +4588,7 @@ export type Database = {
         }[]
       }
       expire_old_shared_briefs: { Args: never; Returns: number }
+      founding_paid_count: { Args: never; Returns: number }
       generate_calendar_feed_token: { Args: never; Returns: string }
       generate_referral_code: { Args: never; Returns: string }
       get_or_create_my_calendar_token: { Args: never; Returns: string }
@@ -4150,6 +4704,18 @@ export type Database = {
       }
       normalize_tags: { Args: { p_tags: string[] }; Returns: string[] }
       normalize_target_field: { Args: { raw: string }; Returns: string }
+      pick_deadline_audit_candidates: {
+        Args: { p_limit?: number }
+        Returns: {
+          application_deadline: string
+          best_url: string
+          canonical_deadline_iso: string
+          deadline_type: string
+          last_audit_at: string
+          scholarship_id: string
+          scholarship_name: string
+        }[]
+      }
       provider_slug: { Args: { p_name: string }; Returns: string }
       read_archetype_insights_batch: {
         Args: { batch_size: number; vt: number }

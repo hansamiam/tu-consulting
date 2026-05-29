@@ -4477,14 +4477,10 @@ const Discover = ({ language = "en" }: Props) => {
                       </div>
 
                       {/* Sidebar membership card — visible to anyone not yet
-                          a member. Quick-panel surface uses "Membership"
-                          (plainer, matches the footer + paywall row labels)
-                          rather than "TopUni Membership" — that name still belongs
-                          on the deeper paywall sheet headers where the user
-                          is being sold the product, not the sidebar nudge.
-                          Founding-cohort scarcity drives conversion via the
-                          "founding rate" callout below. */}
-                      {!isMember && foundingLeft && foundingLeft.left > 0 && (
+                          a member. Founding-50 launch-scarcity callout
+                          removed 2026-05-29 — sidebar now shows a flat
+                          membership nudge without the "X spots left" bar. */}
+                      {!isMember && (
                         <button
                           onClick={() => navigate(ru ? "/pricing/ru" : "/pricing")}
                           className="block w-full text-left rounded-2xl bg-primary text-primary-foreground p-4 hover:shadow-md transition-shadow relative overflow-hidden group"
@@ -4497,17 +4493,8 @@ const Discover = ({ language = "en" }: Props) => {
                             <p className="font-heading font-bold text-sm leading-tight mb-1">
                               {t("Unlock the full database + workshops with our founders.", "Полная база + воркшопы с основателями.")}
                             </p>
-                            <p className="text-[11px] text-primary-foreground/65 mb-3">
-                              {t(
-                                `Founding rate — lifetime price lock. Capped at ${foundingLeft.cap} members.`,
-                                `Цена для основателей — закреплена пожизненно. Лимит: ${foundingLeft.cap} мест.`,
-                              )}
-                            </p>
-                            <div className="h-1.5 rounded-full bg-primary-foreground/15 overflow-hidden mb-2">
-                              <div className="h-full bg-gold-light" style={{ width: `${((foundingLeft.cap - foundingLeft.left) / foundingLeft.cap) * 100}%` }} />
-                            </div>
                             <p className="text-[11px] text-primary-foreground/80 tabular-nums flex items-center justify-between">
-                              <span><span className="font-semibold text-gold-light">{foundingLeft.left}</span> {t("spots left", "мест осталось")}</span>
+                              <span className="font-semibold text-gold-light">$39.99 / {t("month", "месяц")}</span>
                               <span className="text-gold-light font-medium">{t("See pricing →", "Цены →")}</span>
                             </p>
                           </div>
@@ -5230,12 +5217,6 @@ const Discover = ({ language = "en" }: Props) => {
                   </div>
                 ))}
               </div>
-              {foundingLeft && foundingLeft.left > 0 && (
-                <div className="rounded-xl bg-gold/10 border border-gold/25 p-3 text-xs text-gold-dark text-center">
-                  <span className="font-semibold tabular-nums">{foundingLeft.left}</span>{" "}
-                  {t("early-access spots left · price locked for life", "мест раннего доступа · цена закреплена пожизненно")}
-                </div>
-              )}
               <div className="flex flex-col gap-2 pt-2">
                 <Button variant="gold" size="lg" className="w-full gap-2" onClick={() => { setPaywallOpen(null); navigate(ru ? "/pricing/ru" : "/pricing"); }}>
                   {t("See Membership", "Смотреть Membership")} <ArrowRight className="h-4 w-4" />
