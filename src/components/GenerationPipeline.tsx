@@ -61,8 +61,50 @@ export function GenerationPipeline({ profile, isRu = false }: Props) {
   const countryList = (profile.targetCountries || []).slice(0, 2).join(", ");
   const gpa = profile.gpa?.trim();
   const ielts = profile.ielts?.trim();
-  const majorText = profile.major?.trim() || "";
-  const gradeText = profile.gradeLevel?.trim() || "";
+  // 2026-05-30 — gradeLevel + major are stored as canonical EN tokens;
+  // the loading screen interpolation was leaking "Master's · Architecture"
+  // into the RU pipeline. Localise inline for display only; the
+  // downstream profile object the LLM reads is untouched.
+  const GRADE_RU: Record<string, string> = {
+    "Bachelor's": "Бакалавриат",
+    "Master's": "Магистратура",
+    "PhD applicant": "PhD",
+    "Working professional": "Опытный специалист",
+    "High School": "Школа",
+    "Gap Year": "Gap Year",
+  };
+  // Small inline map covers the 30+ most-likely picks. Long-tail
+  // "Other" entries (free text typed by the user) display as-is in
+  // either language — that's fine since the user typed them in their
+  // own language to begin with.
+  const MAJOR_RU: Record<string, string> = {
+    "Undecided": "Ещё не решил(а)",
+    "Anthropology": "Антропология", "Architecture": "Архитектура",
+    "Artificial Intelligence": "Искусственный интеллект",
+    "Biology": "Биология", "Business": "Бизнес", "Chemistry": "Химия",
+    "Communications": "Коммуникации", "Computer Science": "Computer Science",
+    "Cultural Studies": "Культурология", "Data Science": "Data Science",
+    "Design": "Дизайн", "Development Studies": "Development Studies",
+    "Economics": "Экономика", "Education": "Педагогика",
+    "Engineering": "Инженерия", "Environmental Studies": "Экология",
+    "Film": "Кино", "Finance": "Финансы", "History": "История",
+    "International Relations": "Международные отношения",
+    "Journalism": "Журналистика", "Law": "Юриспруденция",
+    "Linguistics": "Лингвистика", "Literature": "Литература",
+    "Marketing": "Маркетинг", "Mathematics": "Математика",
+    "Medicine & Public Health": "Медицина и public health",
+    "Music": "Музыка", "Performing Arts": "Исполнительские искусства",
+    "Philosophy": "Философия", "Physics": "Физика",
+    "Political Science": "Политология", "Psychology": "Психология",
+    "Public Policy": "Государственная политика",
+    "Social Work": "Социальная работа", "Sociology": "Социология",
+    "Statistics": "Статистика", "Sustainability": "Устойчивое развитие",
+    "Visual Arts": "Изобразительное искусство",
+  };
+  const rawMajor = profile.major?.trim() || "";
+  const rawGrade = profile.gradeLevel?.trim() || "";
+  const majorText = isRu ? (MAJOR_RU[rawMajor] ?? rawMajor) : rawMajor;
+  const gradeText = isRu ? (GRADE_RU[rawGrade] ?? rawGrade) : rawGrade;
 
   // 2026-05-29 v2 — 6 steps → 4. Each line is one short, true sentence.
   // Trimmed the editorial buzz ("honest diagnosis", "Optimistic-realist

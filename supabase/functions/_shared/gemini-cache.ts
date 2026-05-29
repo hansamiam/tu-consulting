@@ -139,6 +139,60 @@ interface GeminiCallOpts {
   overrideTail?: string;
 }
 
+/**
+ * Transient-error retry wrapper for the Gemini fetch.
+ *
+ * Gemini hands back 503 ("model overloaded — spikes in demand are
+ * usually temporary") + 429 (rate limit) + 500 (internal) under load.
+ * All three are retry-safe — the request hasn't been billed and the
+ * model hasn't seen state. Backoff schedule is conservative so we
+ * don't pile onto an already-stressed endpoint.
+ *
+ * Returns the final Response — caller still owns the >= 400 branch.
+ */
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  label: string,
+): Promise<Response> {
+  // [first attempt = 0ms wait, then 800ms, then 2400ms]
+  const delays = [0, 800, 2400];
+  let lastResp: Response | null = null;
+  let lastErr: unknown = null;
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i] > 0) {
+      await new Promise(r => setTimeout(r, delays[i]));
+    }
+    try {
+      lastResp = await fetch(url, init);
+      // Retry only on transient server-side codes.
+      if (
+        lastResp.status === 429 ||
+        lastResp.status === 500 ||
+        lastResp.status === 502 ||
+        lastResp.status === 503 ||
+        lastResp.status === 504
+      ) {
+        if (i < delays.length - 1) {
+          console.warn(`[${label}] transient ${lastResp.status} — retrying (attempt ${i + 2}/${delays.length})`);
+          continue;
+        }
+      }
+      return lastResp;
+    } catch (e) {
+      // Network-layer failure (DNS, connection reset, etc.) — same
+      // transient class, also retry.
+      lastErr = e;
+      if (i < delays.length - 1) {
+        console.warn(`[${label}] fetch threw — retrying (attempt ${i + 2}/${delays.length}):`, (e as Error).message);
+        continue;
+      }
+    }
+  }
+  if (lastResp) return lastResp;
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
 async function callGemini(opts: GeminiCallOpts): Promise<unknown> {
   const { ctx } = opts;
   const tail = opts.overrideTail ?? buildTail(ctx);
@@ -162,11 +216,15 @@ async function callGemini(opts: GeminiCallOpts): Promise<unknown> {
   }
 
   const url = `${API_BASE}/models/${MODEL}:generateContent?key=${getApiKey()}`;
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const resp = await fetchWithRetry(
+    url,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    "gemini-cache",
+  );
 
   if (!resp.ok) {
     const text = await resp.text();
@@ -203,11 +261,15 @@ async function callGeminiInline(opts: GeminiCallOpts): Promise<unknown> {
       responseSchema: STRATEGY_REPORT_SCHEMA,
     },
   };
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const resp = await fetchWithRetry(
+    url,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    "gemini-inline",
+  );
   if (!resp.ok) {
     throw new Error(`gemini inline generate failed (${resp.status}): ${await resp.text()}`);
   }

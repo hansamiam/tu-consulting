@@ -482,6 +482,18 @@ serve(async (req) => {
         { code: "ai_rate_limited" },
       );
     }
+    // 2026-05-30 — Gemini intermittently 503s under load; we already
+    // retry 3x with backoff inside gemini-cache.ts, so reaching here
+    // means all 3 attempts failed. Surface a user-actionable message
+    // instead of dumping the raw JSON.
+    if (/gemini.*generate failed \(503\)|model is currently experiencing high demand|UNAVAILABLE/i.test(msg)) {
+      return respondError(
+        503,
+        "Gemini is briefly overloaded. We retried 3 times — try again in 30 seconds.",
+        corsHeaders,
+        { code: "ai_overloaded" },
+      );
+    }
 
     return respondError(500, msg, corsHeaders);
   }
