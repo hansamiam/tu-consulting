@@ -38,6 +38,52 @@ const DEGREE_LABEL: Record<Required<StrategyReportV2>["targetDegree"], { en: str
   phd:      { en: "PhD",        ru: "PhD" },
 };
 
+// 2026-05-30 — display-only EN→RU lookups so the Russian masthead
+// doesn't read "Магистратура (Biology) · Цель: Germany". The wizard
+// stores both fields as canonical English tokens (so the LLM context
+// stays language-stable); we localise them at the display boundary.
+// Long-tail values (free-text majors / typeahead destinations not in
+// these maps) fall through to the English label, which still reads
+// fine since the user likely typed it themselves.
+const MAJOR_RU: Record<string, string> = {
+  "Undecided": "Ещё не решил(а)",
+  "Anthropology": "Антропология", "Architecture": "Архитектура",
+  "Artificial Intelligence": "Искусственный интеллект",
+  "Biology": "Биология", "Business": "Бизнес", "Chemistry": "Химия",
+  "Communications": "Коммуникации", "Computer Science": "Computer Science",
+  "Cultural Studies": "Культурология", "Data Science": "Data Science",
+  "Design": "Дизайн", "Development Studies": "Development Studies",
+  "Economics": "Экономика", "Education": "Педагогика",
+  "Engineering": "Инженерия", "Environmental Studies": "Экология",
+  "Film": "Кино", "Finance": "Финансы", "History": "История",
+  "International Relations": "Международные отношения",
+  "Journalism": "Журналистика", "Law": "Юриспруденция",
+  "Linguistics": "Лингвистика", "Literature": "Литература",
+  "Marketing": "Маркетинг", "Mathematics": "Математика",
+  "Medicine & Public Health": "Медицина и public health",
+  "Music": "Музыка", "Performing Arts": "Исполнительские искусства",
+  "Philosophy": "Философия", "Physics": "Физика",
+  "Political Science": "Политология", "Psychology": "Психология",
+  "Public Policy": "Государственная политика",
+  "Social Work": "Социальная работа", "Sociology": "Социология",
+  "Statistics": "Статистика", "Sustainability": "Устойчивое развитие",
+  "Visual Arts": "Изобразительное искусство",
+};
+
+const COUNTRY_RU: Record<string, string> = {
+  "USA": "США", "UK": "Великобритания", "Canada": "Канада",
+  "Germany": "Германия", "Czech Republic": "Чехия", "Czechia": "Чехия",
+  "South Korea": "Южная Корея", "Poland": "Польша", "Hungary": "Венгрия",
+  "Türkiye": "Турция", "Turkey": "Турция", "Japan": "Япония", "China": "Китай",
+  "Australia": "Австралия", "Singapore": "Сингапур", "Netherlands": "Нидерланды",
+  "Malaysia": "Малайзия", "France": "Франция", "Italy": "Италия",
+  "Spain": "Испания", "Sweden": "Швеция", "Norway": "Норвегия",
+  "Denmark": "Дания", "Finland": "Финляндия", "Switzerland": "Швейцария",
+  "Belgium": "Бельгия", "Ireland": "Ирландия", "New Zealand": "Новая Зеландия",
+  "Russia": "Россия", "Kazakhstan": "Казахстан", "Uzbekistan": "Узбекистан",
+  "Kyrgyzstan": "Кыргызстан",
+};
+
 const ScoreDots = ({ score }: { score: number }) => {
   const dots = [1, 2, 3, 4, 5];
   return (
@@ -85,9 +131,17 @@ export const Masthead = ({
   })();
 
   const degreeLabel = targetDegree ? DEGREE_LABEL[targetDegree][language] : "";
-  const trackBits = [degreeLabel, fieldOfStudy].filter(Boolean);
+  const localizedField = (() => {
+    if (!fieldOfStudy) return "";
+    if (language !== "ru") return fieldOfStudy;
+    return MAJOR_RU[fieldOfStudy] ?? fieldOfStudy;
+  })();
+  const trackBits = [degreeLabel, localizedField].filter(Boolean);
   const trackStr = trackBits.length === 2 ? `${trackBits[0]} (${trackBits[1]})` : trackBits[0] || "";
-  const targetStr = (targetCountries ?? []).slice(0, 3).join(" / ");
+  const targetStr = (targetCountries ?? [])
+    .slice(0, 3)
+    .map(c => (language === "ru" ? (COUNTRY_RU[c] ?? c) : c))
+    .join(" / ");
 
   const metaParts: string[] = [];
   if (firstName) metaParts.push(`${t(language, "Prepared for", "Подготовлено для")}: ${firstName}`);

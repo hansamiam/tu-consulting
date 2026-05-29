@@ -252,9 +252,14 @@ function coerceReport(
     };
   });
 
-  const readinessScore = Math.round(
-    (axes.reduce((s, a) => s + a.value, 0) / axes.length) * 2
-  ) / 2;
+  // 2026-05-30 — calibrated range [2.0, 4.5] in 0.5 steps. Pre-clamp
+  // the report could show 1.0 (too brutal — no one is a 1.0 candidate)
+  // or 5.0 (no one is "perfect" against scholarship gates). Most real
+  // profiles land 2.5–4.0; pinning 3.0 as the gravity center reads as
+  // honest-realist rather than as a participation trophy or a punch.
+  const rawAvg = axes.reduce((s, a) => s + a.value, 0) / axes.length;
+  const snappedHalfStep = Math.round(rawAvg * 2) / 2;
+  const readinessScore = Math.max(2.0, Math.min(4.5, snappedHalfStep));
 
   const uniqueEdge = typeof r.uniqueEdge === "string" ? r.uniqueEdge.trim() : "";
   const blindspot = typeof r.blindspot === "string" ? r.blindspot.trim() : "";

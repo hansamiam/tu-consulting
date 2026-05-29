@@ -1204,7 +1204,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                     <div className="grid gap-5">
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Name *", "Имя *")}</Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Name", "Имя")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                           <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t("What should we call you?", "Как тебя зовут?")} className="h-11 bg-card" />
                         </div>
                         <div className="space-y-1.5">
@@ -1341,7 +1341,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               aria-pressed={englishTestKind === val}
                               className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
                                 englishTestKind === val
-                                  ? "bg-gold/15 text-gold-dark border-gold"
+                                  ? "bg-gold/20 text-brand-navy border-gold"
                                   : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
                               }`}
                             >
@@ -1616,13 +1616,18 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               }
                               className="h-11 bg-card flex-1"
                             />
-                            <div className="flex rounded-md overflow-hidden border border-border bg-card shrink-0">
+                            {/* 2026-05-30 — mobile fix: each scale button
+                                takes equal share via flex-1, and the picker
+                                itself spans full width when stacked under
+                                the GPA input (sm:w-auto preserves natural
+                                width once the row lays out horizontally). */}
+                            <div className="flex w-full sm:w-auto rounded-md overflow-hidden border border-border bg-card">
                               {["4.0", "5.0", "10.0", "100"].map(s => (
                                 <button
                                   type="button"
                                   key={s}
                                   onClick={() => setGpaScale(s)}
-                                  className={`px-2.5 text-xs font-semibold transition-colors ${
+                                  className={`flex-1 sm:flex-initial h-11 sm:h-auto px-3 sm:px-2.5 text-xs font-semibold transition-colors ${
                                     gpaScale === s
                                       ? "bg-gold-dark text-primary-foreground"
                                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -1755,7 +1760,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                   aria-pressed={curriculumType === val}
                                   className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
                                     curriculumType === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                      ? "bg-gold/20 text-brand-navy border-gold"
                                       : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
                                   }`}
                                 >
@@ -1826,7 +1831,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                   aria-pressed={fieldContinuity === val}
                                   className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
                                     fieldContinuity === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                      ? "bg-gold/20 text-brand-navy border-gold"
                                       : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
                                   }`}
                                 >
@@ -1905,6 +1910,12 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         // of the page; tighter vertical rhythm matches
                         // the sleek feel of bachelor's curriculum block.
                         <div className="space-y-5">
+                          {/* 2026-05-30 — order swapped to Quant → Research →
+                              Work per Samuel. Reads as a natural academic
+                              progression (skill basis → research output →
+                              work history); also keeps the two 3-option
+                              chip rows adjacent which is visually cleaner
+                              than 3 / 4 / 3. */}
                           {([
                             {
                               label: t("Math / quantitative background", "Математическая / quant подготовка"),
@@ -1917,6 +1928,16 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               ] as const,
                             },
                             {
+                              label: t("Research experience", "Исследовательский опыт"),
+                              value: researchExperience,
+                              set: setResearchExperience,
+                              options: [
+                                ["extensive", t("Extensive (published papers)",      "Серьёзный (есть публикации)")],
+                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab-ассистент)")],
+                                ["light",     t("Very light / none",                  "Очень слабый / нет")],
+                              ] as const,
+                            },
+                            {
                               label: t("Full-time work experience", "Опыт работы (full-time)"),
                               value: workExperience,
                               set: setWorkExperience,
@@ -1925,16 +1946,6 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                 ["1_2",    t("1–2 years", "1–2 года")],
                                 ["3_5",    t("3–5 years", "3–5 лет")],
                                 ["5_plus", t("5+ years",  "5+ лет")],
-                              ] as const,
-                            },
-                            {
-                              label: t("Research experience", "Исследовательский опыт"),
-                              value: researchExperience,
-                              set: setResearchExperience,
-                              options: [
-                                ["extensive", t("Extensive (published papers)",      "Серьёзный (есть публикации)")],
-                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab-ассистент)")],
-                                ["light",     t("Very light / none",                  "Очень слабый / нет")],
                               ] as const,
                             },
                           ] as const).map(({ label, value, set, options }) => (
@@ -1952,7 +1963,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                     aria-pressed={value === val}
                                     className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
                                       value === val
-                                        ? "bg-gold/15 text-gold-dark border-gold"
+                                        ? "bg-gold/20 text-brand-navy border-gold"
                                         : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
                                     }`}
                                   >
@@ -2020,7 +2031,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                 )}
                                 className={`shrink-0 inline-flex items-center gap-1.5 px-3 h-9 rounded-full border text-[12px] font-semibold transition-all mt-1 ${
                                   lead === "yes"
-                                    ? "bg-gold/15 text-gold-dark border-gold"
+                                    ? "bg-gold/20 text-brand-navy border-gold"
                                     : "bg-background text-foreground/55 border-border/70 hover:border-gold-dark/60 hover:text-foreground/80"
                                 }`}
                               >
@@ -2174,7 +2185,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               aria-pressed={selected}
                               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
                                 selected
-                                  ? "bg-gold/15 text-gold-dark border-gold"
+                                  ? "bg-gold/20 text-brand-navy border-gold"
                                   : isOther
                                     ? "bg-card text-foreground border-dashed border-border hover:border-gold-dark/60"
                                     : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
@@ -2201,7 +2212,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               type="button"
                               onClick={() => toggleCountry(token)}
                               aria-pressed={true}
-                              className="inline-flex items-center gap-1.5 rounded-full border bg-gold/15 text-gold-dark border-gold px-3 py-1.5 text-xs font-medium min-h-[36px]"
+                              className="inline-flex items-center gap-1.5 rounded-full border bg-gold/20 text-brand-navy border-gold px-3 py-1.5 text-xs font-medium min-h-[36px]"
                             >
                               <Check className="w-3 h-3" />
                               <span className="leading-none" aria-hidden>{countryFlag(token)}</span>
@@ -2359,7 +2370,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                     aria-pressed={selected}
                                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
                                       selected
-                                        ? "bg-gold/15 text-gold-dark border-gold"
+                                        ? "bg-gold/20 text-brand-navy border-gold"
                                         : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                     }`}
                                   >
@@ -2390,7 +2401,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                       aria-pressed={selected}
                                       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[34px] ${
                                         selected
-                                          ? "bg-gold/15 text-gold-dark border-gold"
+                                          ? "bg-gold/20 text-brand-navy border-gold"
                                           : "bg-card text-foreground border-border/70 hover:border-gold-dark/60"
                                       }`}
                                     >
