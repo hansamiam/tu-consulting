@@ -1068,7 +1068,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           {([
                             ["ielts",   t("IELTS",            "IELTS")],
                             ["toefl",   t("TOEFL",            "TOEFL")],
-                            ["other",   t("Other / fluent",   "Другое / свободно")],
+                            ["other",   t("Other",            "Другое")],
                             ["not_yet", t("Haven't taken it", "Ещё не сдавал(а)")],
                           ] as const).map(([val, label]) => (
                             <button
@@ -1095,6 +1095,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           ))}
                         </div>
                         {englishTestKind === "ielts" && (
+                          // IELTS scores are issued in 0.5 increments
+                          // (0, 0.5, 1.0, …, 9.0). Snap on blur so 4.2
+                          // becomes 4.0, 4.3 becomes 4.5, etc. Numeric
+                          // clamp during typing stays at [0, 9].
                           <Input
                             value={ielts}
                             inputMode="decimal"
@@ -1103,11 +1107,20 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               setIelts(next);
                               setIeltsState(next.trim() ? "taken" : "unspecified");
                             }}
-                            placeholder={t("Your IELTS score (0–9, e.g. 7.0)", "Ваш балл IELTS (0–9, напр. 7.0)")}
-                            className="h-11 bg-card"
+                            onBlur={() => {
+                              if (!ielts.trim()) return;
+                              const n = parseFloat(ielts);
+                              if (isNaN(n)) return;
+                              const snapped = Math.max(0, Math.min(9, Math.round(n * 2) / 2));
+                              setIelts(snapped.toFixed(1));
+                            }}
+                            placeholder={t("e.g. 7.0", "напр. 7.0")}
+                            className="h-11 bg-card max-w-[180px]"
                           />
                         )}
                         {englishTestKind === "toefl" && (
+                          // TOEFL iBT is integer-only [0, 120]. Snap on
+                          // blur to round any stray decimal and clamp.
                           <Input
                             value={toefl}
                             inputMode="numeric"
@@ -1116,19 +1129,22 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                               setToefl(next);
                               setToeflState(next.trim() ? "taken" : "unspecified");
                             }}
-                            placeholder={t("Your TOEFL score (0–120, e.g. 100)", "Ваш балл TOEFL (0–120, напр. 100)")}
-                            className="h-11 bg-card"
+                            onBlur={() => {
+                              if (!toefl.trim()) return;
+                              const n = parseInt(toefl, 10);
+                              if (isNaN(n)) return;
+                              setToefl(String(Math.max(0, Math.min(120, n))));
+                            }}
+                            placeholder={t("e.g. 100", "напр. 100")}
+                            className="h-11 bg-card max-w-[180px]"
                           />
                         )}
                         {englishTestKind === "other" && (
                           <Input
                             value={englishOtherNote}
                             onChange={e => setEnglishOtherNote(e.target.value)}
-                            placeholder={t(
-                              "e.g. Duolingo 130 · English-medium school · half-American · fluent at work",
-                              "напр. Duolingo 130 · школа на английском · полусвободно · работаю на английском",
-                            )}
-                            className="h-11 bg-card"
+                            placeholder={t("e.g. Duolingo 130", "напр. Duolingo 130")}
+                            className="h-11 bg-card max-w-[260px]"
                           />
                         )}
                       </div>
@@ -1275,7 +1291,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           to it, per Samuel 2026-05-29 polish pass. */}
                       <div className="space-y-2">
                         <div className="space-y-1.5">
-                          <Label className="text-xs uppercase tracking-wider font-medium">{t("What's your GPA looking like?", "Какой у тебя средний балл?")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
+                          <Label className="text-xs uppercase tracking-wider font-medium">{t("Most recent GPA", "Последний средний балл")} <span className="text-rose-500 font-bold ml-0.5">*</span></Label>
                           {/* Paired input + scale picker — covers the four
                               common bases (US 4.0, post-Soviet 5.0,
                               Continental Europe 10.0, percentage 100) so
@@ -1503,167 +1519,19 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </div>
                       )}
 
-                      {/* 2026-05-29 — grad-applicant additions per Samuel's
-                          spec. Quantitative background is the single
-                          highest-signal field for the cofounder's
-                          "PhD-Econ-without-math pivot" detection. Work
-                          experience + research experience are buckets
-                          (none / 1-2 / 3-5 / 5+) rather than free text
-                          so the LLM gets clean signal. */}
-                      {isGraduateApp && (
-                        <div className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
-                          <div className="space-y-2">
-                            <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Math / quantitative background", "Математическая / quant подготовка")} <span className="text-rose-500 font-bold ml-0.5">*</span>
-                            </Label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {([
-                                ["heavy",    t("Heavy (advanced stats / calculus)", "Сильная (advanced stats / calculus)")],
-                                ["moderate", t("Moderate (basic stats / econ)",     "Умеренная (basic stats / econ)")],
-                                ["light",    t("Light / none",                       "Слабая / нет")],
-                              ] as const).map(([val, label]) => (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => setQuantBackground(val)}
-                                  aria-pressed={quantBackground === val}
-                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                    quantBackground === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
-                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Full-time work experience", "Опыт работы (full-time)")} <span className="text-rose-500 font-bold ml-0.5">*</span>
-                            </Label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {([
-                                ["none",   t("None",          "Нет")],
-                                ["1_2",    t("1–2 years",     "1–2 года")],
-                                ["3_5",    t("3–5 years",     "3–5 лет")],
-                                ["5_plus", t("5+ years",      "5+ лет")],
-                              ] as const).map(([val, label]) => (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => setWorkExperience(val)}
-                                  aria-pressed={workExperience === val}
-                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                    workExperience === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
-                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Research experience", "Исследовательский опыт")} <span className="text-rose-500 font-bold ml-0.5">*</span>
-                            </Label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {([
-                                ["extensive", t("Extensive (published papers)",     "Серьёзный (есть публикации)")],
-                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab assistant)")],
-                                ["light",     t("Light (class projects only)",       "Лёгкий (только курсовые)")],
-                                ["none",      t("None",                              "Нет")],
-                              ] as const).map(([val, label]) => (
-                                <button
-                                  key={val}
-                                  type="button"
-                                  onClick={() => setResearchExperience(val)}
-                                  aria-pressed={researchExperience === val}
-                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
-                                    researchExperience === val
-                                      ? "bg-gold/15 text-gold-dark border-gold"
-                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {isPhDApp && (
-                        <p className="text-[12px] text-muted-foreground/70 italic">
-                          {t(
-                            "Subject GRE scores can be added later — write them under Step 4 (Research experience) for now.",
-                            "Предметные GRE можно добавить позже — впиши их в Шаге 4 (Исследовательский опыт).",
-                          )}
-                        </p>
-                      )}
-                    </div>
-                    {/* Foreign-languages chip set moved to Step 1 (You)
-                        on 2026-05-25 — it's identity context (what
-                        languages a student speaks), not a test score,
-                        and pairing it with English-test scores felt
-                        forced. */}
-                    <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
-                      <Button
-                        variant="gold"
-                        onClick={() => goToStep(3)}
-                        disabled={
-                          !gpa.trim() ||
-                          (isGraduateApp && (!quantBackground || !workExperience || !researchExperience))
-                        }
-                      >
-                        {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* 2026-05-29 v2 — NEW Step 3 (Narrative). Top 3
-                    activities / experiences with per-row leadership.
-                    careerGoal lives here as the closing question. Old
-                    Step 3 (Goals) is now Step 4 below. */}
-                {step === 3 && (
-                  <motion.div
-                    key="step3"
-                    initial={stepEnter}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={stepExit}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    className="space-y-7"
-                  >
-                    <div>
-                      <div className="flex items-baseline gap-3 mb-3">
-                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
-                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Narrative", "Нарратив")}</span>
-                      </div>
-                      <h2 className="font-heading text-[28px] sm:text-[40px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
-                        {t("What's the story?", "В чём твоя история?")}
-                      </h2>
-                    </div>
-
-                    <div className="space-y-6">
-                      {/* 2026-05-30 v3 — grad-only Narrative additions
-                          (cofounder spec). previousMajor + fieldContinuity
-                          + fieldBridge drive the LLM's pivot-vs-deepen
-                          read. Without these, the strategy report can't
-                          tell apart "BSc Econ → MSc Econ" (deepen play)
-                          from "BA PoliSci → MSc Econ" (pivot play with
-                          credit-gap risk). Grad applicants only — bachelor
-                          applicants don't have a previous degree to anchor. */}
+                      {/* 2026-05-30 v3 switcharoo — grad-only previous-degree
+                          + field-continuity + bridge now live on Academics
+                          (they belong with the academic record). The
+                          quant / work / research chips moved up to
+                          Narrative. Cofounder spec: pivot read needs both
+                          the prior major AND the bridge alongside the
+                          target field for the LLM to call deepen vs pivot. */}
                       {isGraduateApp && (
                         <div className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
                           <div className="space-y-1.5">
                             <Label htmlFor="previousMajor" className="text-xs uppercase tracking-wider font-medium">
-                              {t("What did you study before?", "Что ты изучал(а) раньше?")}
+                              {t("What did you study before?", "Что ты изучал(а) раньше?")}{" "}
+                              <span className="text-rose-500 font-bold ml-0.5">*</span>
                             </Label>
                             <p className="text-[12px] text-muted-foreground -mt-0.5">
                               {t(
@@ -1685,7 +1553,8 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
 
                           <div className="space-y-2">
                             <Label className="text-xs uppercase tracking-wider font-medium block">
-                              {t("Is your target field the same as your background?", "Целевая область та же, что и бэкграунд?")}
+                              {t("Is your target field the same as your background?", "Целевая область та же, что и бэкграунд?")}{" "}
+                              <span className="text-rose-500 font-bold ml-0.5">*</span>
                             </Label>
                             <div className="flex flex-wrap gap-1.5">
                               {([
@@ -1736,56 +1605,186 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </div>
                       )}
 
-                      <div className="space-y-3">
-                        <Label className="text-xs uppercase tracking-wider font-medium">
-                          {isGraduateApp
-                            ? t("Top 3 experiences", "Топ-3 опыта")
-                            : t("Top 3 activities", "Топ-3 активности")}
-                        </Label>
-                        <p className="text-[12px] text-muted-foreground -mt-1">
-                          {isGraduateApp
-                            ? t(
-                                "The work / research / projects that shaped you most.",
-                                "Работа / исследования / проекты, которые определили тебя.",
-                              )
-                            : t(
-                                "Clubs, sports, jobs, side projects — anything you spent real time on. Mark which you led.",
-                                "Клубы, спорт, работа, проекты — то, на что ты реально тратил(а) время. Отметь лидерство.",
-                              )}
+                      {isPhDApp && (
+                        <p className="text-[12px] text-muted-foreground/70 italic">
+                          {t(
+                            "Subject GRE scores can be added later — write them under Step 4 (Research experience) for now.",
+                            "Предметные GRE можно добавить позже — впиши их в Шаге 4 (Исследовательский опыт).",
+                          )}
                         </p>
-                        {([
-                          { n: 1, val: activity1, set: setActivity1, lead: activity1Leadership, setLead: setActivity1Leadership },
-                          { n: 2, val: activity2, set: setActivity2, lead: activity2Leadership, setLead: setActivity2Leadership },
-                          { n: 3, val: activity3, set: setActivity3, lead: activity3Leadership, setLead: setActivity3Leadership },
-                        ] as const).map(({ n, val, set, lead, setLead }) => (
-                          // 2026-05-30 v3 — grad applicants drop the per-row
-                          // Led toggle (per cofounder direction; leadership
-                          // signal lives on Step 2 work-experience chip for
-                          // them). Bachelor applicants keep it as the highest-
-                          // signal narrative differentiator for undergrad ECs.
-                          <div
-                            key={n}
-                            className={`grid gap-3 items-start ${
-                              isGraduateApp ? "grid-cols-[28px_1fr]" : "grid-cols-[28px_1fr_auto]"
-                            }`}
-                          >
-                            <span className="font-heading text-[18px] font-bold text-gold-dark tabular-nums leading-[2.2]">
-                              {n}.
-                            </span>
-                            <Input
-                              value={val}
-                              onChange={e => set(e.target.value)}
-                              placeholder={
-                                isGraduateApp
-                                  ? n === 1
-                                    ? t("e.g. Researched climate policy at UN intern · co-author on 1 paper",
-                                        "напр. Исследование климатической политики в ООН · co-author 1 статьи")
-                                    : n === 2
-                                      ? t("e.g. Built a fintech MVP, raised pre-seed",
-                                          "напр. Запустил(а) fintech MVP, поднял(а) pre-seed")
-                                      : t("e.g. 2-year analyst at McKinsey Almaty",
-                                          "напр. 2 года аналитик в McKinsey Алматы")
-                                  : n === 1
+                      )}
+                    </div>
+                    {/* Foreign-languages chip set moved to Step 1 (You)
+                        on 2026-05-25 — it's identity context (what
+                        languages a student speaks), not a test score,
+                        and pairing it with English-test scores felt
+                        forced. */}
+                    <div className="flex justify-between pt-4">
+                      <Button variant="outline" onClick={() => goToStep(1)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
+                      <Button
+                        variant="gold"
+                        onClick={() => goToStep(3)}
+                        disabled={
+                          !gpa.trim() ||
+                          (isGraduateApp && (!previousMajor.trim() || !fieldContinuity))
+                        }
+                      >
+                        {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 2026-05-29 v2 — NEW Step 3 (Narrative). Top 3
+                    activities / experiences with per-row leadership.
+                    careerGoal lives here as the closing question. Old
+                    Step 3 (Goals) is now Step 4 below. */}
+                {step === 3 && (
+                  <motion.div
+                    key="step3"
+                    initial={stepEnter}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={stepExit}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-7"
+                  >
+                    <div>
+                      <div className="flex items-baseline gap-3 mb-3">
+                        <span className="font-mono text-[12px] text-gold-dark font-semibold tabular-nums tracking-wider">03</span>
+                        <span className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{t("Narrative", "Нарратив")}</span>
+                      </div>
+                      <h2 className="font-heading text-[28px] sm:text-[40px] font-bold text-foreground tracking-[-0.02em] leading-[1.08]">
+                        {t("What's the story?", "В чём твоя история?")}
+                      </h2>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* 2026-05-30 v3 switcharoo — grad applicants now
+                          get the quant / work / research chips on Narrative
+                          (moved up from Academics). Bachelor applicants
+                          get the Top 3 numbered list with per-row "I led
+                          this" toggle. Previous-degree + field-continuity
+                          + bridge moved to Academics this batch — they
+                          belong with the academic record. */}
+                      {isGraduateApp && (
+                        <div className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-wider font-medium block">
+                              {t("Math / quantitative background", "Математическая / quant подготовка")}{" "}
+                              <span className="text-rose-500 font-bold ml-0.5">*</span>
+                            </Label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([
+                                ["heavy",    t("Heavy (advanced stats / calculus)", "Сильная (advanced stats / calculus)")],
+                                ["moderate", t("Moderate (basic stats / econ)",     "Умеренная (basic stats / econ)")],
+                                ["light",    t("Light / none",                       "Слабая / нет")],
+                              ] as const).map(([val, label]) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => setQuantBackground(val)}
+                                  aria-pressed={quantBackground === val}
+                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                    quantBackground === val
+                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-wider font-medium block">
+                              {t("Full-time work experience", "Опыт работы (full-time)")}{" "}
+                              <span className="text-rose-500 font-bold ml-0.5">*</span>
+                            </Label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([
+                                ["none",   t("None",          "Нет")],
+                                ["1_2",    t("1–2 years",     "1–2 года")],
+                                ["3_5",    t("3–5 years",     "3–5 лет")],
+                                ["5_plus", t("5+ years",      "5+ лет")],
+                              ] as const).map(([val, label]) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => setWorkExperience(val)}
+                                  aria-pressed={workExperience === val}
+                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                    workExperience === val
+                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-wider font-medium block">
+                              {t("Research experience", "Исследовательский опыт")}{" "}
+                              <span className="text-rose-500 font-bold ml-0.5">*</span>
+                            </Label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([
+                                ["extensive", t("Extensive (published papers)",     "Серьёзный (есть публикации)")],
+                                ["moderate",  t("Moderate (thesis / lab assistant)", "Умеренный (диплом / lab assistant)")],
+                                ["light",     t("Light (class projects only)",       "Лёгкий (только курсовые)")],
+                                ["none",      t("None",                              "Нет")],
+                              ] as const).map(([val, label]) => (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => setResearchExperience(val)}
+                                  aria-pressed={researchExperience === val}
+                                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all min-h-[34px] ${
+                                    researchExperience === val
+                                      ? "bg-gold/15 text-gold-dark border-gold"
+                                      : "bg-background text-foreground border-border/70 hover:border-gold-dark/60"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Top 3 activities — bachelor-only per 2026-05-30
+                          v3 audit. Grad applicants don't get a Top 3
+                          rows surface; their structured chips above
+                          replace it. */}
+                      {!isGraduateApp && (
+                        <div className="space-y-3">
+                          <Label className="text-xs uppercase tracking-wider font-medium">
+                            {t("Top 3 activities", "Топ-3 активности")}
+                          </Label>
+                          <p className="text-[12px] text-muted-foreground -mt-1">
+                            {t(
+                              "Clubs, sports, jobs, side projects — anything you spent real time on. Star the ones you led.",
+                              "Клубы, спорт, работа, проекты — то, на что ты реально тратил(а) время. Отметь, где был(а) лидером.",
+                            )}
+                          </p>
+                          {([
+                            { n: 1, val: activity1, set: setActivity1, lead: activity1Leadership, setLead: setActivity1Leadership },
+                            { n: 2, val: activity2, set: setActivity2, lead: activity2Leadership, setLead: setActivity2Leadership },
+                            { n: 3, val: activity3, set: setActivity3, lead: activity3Leadership, setLead: setActivity3Leadership },
+                          ] as const).map(({ n, val, set, lead, setLead }) => (
+                            <div key={n} className="grid grid-cols-[28px_1fr_auto] gap-3 items-start">
+                              <span className="font-heading text-[18px] font-bold text-gold-dark tabular-nums leading-[2.2]">
+                                {n}.
+                              </span>
+                              <Input
+                                value={val}
+                                onChange={e => set(e.target.value)}
+                                placeholder={
+                                  n === 1
                                     ? t("e.g. Founded a debate club at school",
                                         "напр. Основал(а) клуб дебатов в школе")
                                     : n === 2
@@ -1793,47 +1792,47 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                                           "напр. Капитан баскетбольной команды 2 года")
                                       : t("e.g. Volunteered teaching English to refugees",
                                           "напр. Волонтёр преподавал(а) английский беженцам")
-                              }
-                              className="h-11 bg-card"
-                            />
-                            {!isGraduateApp && (
-                              <div className="flex items-center gap-1.5 pt-1.5">
-                                <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 mr-1">
-                                  {t("Led", "Лидер")}
-                                </span>
-                                {([
-                                  ["yes", t("Yes", "Да")],
-                                  ["no",  t("No",  "Нет")],
-                                ] as const).map(([v, lbl]) => (
-                                  <button
-                                    key={v}
-                                    type="button"
-                                    onClick={() => setLead(lead === v ? undefined : v)}
-                                    aria-pressed={lead === v}
-                                    className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-all ${
-                                      lead === v
-                                        ? "bg-gold/15 text-gold-dark border-gold"
-                                        : "bg-background text-foreground/60 border-border/70 hover:border-gold-dark/60"
-                                    }`}
-                                  >
-                                    {lbl}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                                }
+                                className="h-11 bg-card"
+                              />
+                              {/* 2026-05-30 v3 — "Led / Yes / No" was
+                                  confusing per Samuel ("LED? I did not
+                                  get that it meant leadership"). One
+                                  clear toggle pill: "I led this". Gold
+                                  fill + star when active. Absence ⇒
+                                  did not lead — no explicit "no" needed. */}
+                              <button
+                                type="button"
+                                onClick={() => setLead(lead === "yes" ? undefined : "yes")}
+                                aria-pressed={lead === "yes"}
+                                title={t(
+                                  "Mark if you held a leadership role on this one",
+                                  "Отметь, если был(а) в роли лидера",
+                                )}
+                                className={`shrink-0 inline-flex items-center gap-1.5 px-3 h-9 rounded-full border text-[12px] font-semibold transition-all mt-1 ${
+                                  lead === "yes"
+                                    ? "bg-gold/15 text-gold-dark border-gold"
+                                    : "bg-background text-foreground/55 border-border/70 hover:border-gold-dark/60 hover:text-foreground/80"
+                                }`}
+                              >
+                                <span aria-hidden className="text-[14px] leading-none">{lead === "yes" ? "★" : "☆"}</span>
+                                {t("I led this", "Я был(а) лидером")}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
                       <div className="space-y-1.5">
                         <Label htmlFor="careerGoalNarr" className="text-xs uppercase tracking-wider font-medium">
-                          {t("Who do you want to be?", "Кем ты хочешь стать?")}
+                          {t("Where do you see yourself in 10 years?", "Кем ты видишь себя через 10 лет?")}{" "}
+                          <span className="text-muted-foreground/70 font-normal normal-case">{t("(optional)", "(по желанию)")}</span>
                         </Label>
                         <Textarea
                           id="careerGoalNarr"
                           placeholder={t(
-                            "e.g. Run a development bank in Central Asia · Get into a Stanford CS PhD · Move to Berlin and work in climate tech · Build a fintech that banks Kyrgyz migrants",
-                            "напр. Возглавить банк развития в Центральной Азии · Поступить в Stanford на CS PhD · Переехать в Берлин и работать в climate tech · Запустить финтех для мигрантов из Кыргызстана",
+                            "e.g. Run a development bank in Central Asia · Get into a Stanford CS PhD · Move to Berlin and work in climate tech",
+                            "напр. Возглавить банк развития в Центральной Азии · Поступить в Stanford на CS PhD · Переехать в Берлин и работать в climate tech",
                           )}
                           value={careerGoal}
                           onChange={(e) => setCareerGoal(e.target.value)}
@@ -1844,7 +1843,11 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
 
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" onClick={() => goToStep(2)}><ArrowLeft className="mr-2 w-4 h-4" /> {t("Back", "Назад")}</Button>
-                      <Button variant="gold" onClick={() => goToStep(4)}>
+                      <Button
+                        variant="gold"
+                        onClick={() => goToStep(4)}
+                        disabled={isGraduateApp && (!quantBackground || !workExperience || !researchExperience)}
+                      >
                         {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </div>
