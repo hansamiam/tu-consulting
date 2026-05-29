@@ -262,6 +262,17 @@ const clampScore = (raw: string, max: number, allowDecimal: boolean): string => 
   return cleaned;
 };
 
+/** Lightweight email-shape gate. RFC 5322 is unsanitary in practice;
+ *  this rejects the everyday typos (missing @, missing domain dot,
+ *  trailing whitespace inside, leading dot, double-@) while letting
+ *  the long tail through. The downstream Resend send still validates
+ *  authoritatively; this is the user-facing first-pass. */
+const isPlausibleEmail = (raw: string): boolean => {
+  const s = (raw || "").trim();
+  if (s.length < 5 || s.length > 254) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s);
+};
+
 /** Block the Step 3 Next button when the "Other" major free-text input
  *  is obvious garbage — numbers only, punctuation only, or fewer than
  *  three letter chars. Permissive on purpose: real majors include
@@ -563,6 +574,10 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
 
   const [fullName, setFullName] = useState(draft?.fullName ?? "");
   const [email, setEmail] = useState(draft?.email ?? "");
+  // 2026-05-30 — emailTouched gates whether the inline error renders.
+  // Stays false until the user blurs out of the field; that way the
+  // error doesn't shout while they're mid-typing.
+  const [emailTouched, setEmailTouched] = useState(false);
   const [whatsapp, setWhatsapp] = useState(draft?.whatsapp ?? "");
   const [nationality, setNationality] = useState(draft?.nationality ?? "");
   // 2026-05-30 — Step-1 nationality typeahead keyboard nav. Mouse click
@@ -1194,7 +1209,27 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs uppercase tracking-wider font-medium">{t("Where do we send your strategy?", "Куда отправить твою стратегию?")} <span className="text-rose-600 font-bold">*</span></Label>
-                          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" className="h-11 bg-card" />
+                          <Input
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            onBlur={() => {
+                              // Show the inline error only after the user
+                              // has touched the field — typing in then
+                              // tabbing away is "touched". Stays out of
+                              // their way until they've actually engaged.
+                              if (email.trim()) setEmailTouched(true);
+                            }}
+                            placeholder="you@email.com"
+                            className={`h-11 bg-card ${emailTouched && !isPlausibleEmail(email) ? "border-rose-500 focus-visible:ring-rose-500" : ""}`}
+                            autoComplete="email"
+                            inputMode="email"
+                          />
+                          {emailTouched && !isPlausibleEmail(email) && (
+                            <p className="text-[11.5px] text-rose-600 leading-snug m-0">
+                              {t("Double-check this email address.", "Проверь адрес ещё раз.")}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="space-y-1.5 relative">
@@ -1470,7 +1505,7 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                         disabled={
                           accountSubmitting ||
                           !fullName.trim() ||
-                          !email.trim() ||
+                          !isPlausibleEmail(email) ||
                           !nationality.trim() ||
                           !gradeLevel ||
                           !englishTestKind ||
@@ -1478,6 +1513,14 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           (englishTestKind === "toefl" && !toefl.trim()) ||
                           (englishTestKind === "other" && !englishOtherNote.trim())
                         }
+                        onMouseDown={() => {
+                          // If the user clicks Next without leaving the
+                          // email field first, force the touched-state
+                          // so the inline error surfaces.
+                          if (email.trim() && !isPlausibleEmail(email)) {
+                            setEmailTouched(true);
+                          }
+                        }}
                       >
                         {t("Next", "Далее")} <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
@@ -2078,13 +2121,17 @@ const TopUniAI = ({ language = "en" }: TopUniAIProps) => {
                           <span className="text-rose-500 font-bold ml-0.5">*</span>
                         </Label>
                         <Select value={timeline} onValueChange={setTimeline}>
-                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select", "Выберите")} /></SelectTrigger>
+                          <SelectTrigger className="h-11 bg-card"><SelectValue placeholder={t("Select", "Выбери")} /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Fall 2026">Fall 2026</SelectItem>
-                            <SelectItem value="Spring 2027">Spring 2027</SelectItem>
-                            <SelectItem value="Fall 2027">Fall 2027</SelectItem>
-                            <SelectItem value="Spring 2028">Spring 2028</SelectItem>
-                            <SelectItem value="Flexible">Flexible</SelectItem>
+                            {/* 2026-05-30 — value (token) stays canonical EN
+                                for downstream consumers (prompt, hub-context
+                                seeding). Display label flips to RU when
+                                language=ru. */}
+                            <SelectItem value="Fall 2026">{t("Fall 2026", "Осень 2026")}</SelectItem>
+                            <SelectItem value="Spring 2027">{t("Spring 2027", "Весна 2027")}</SelectItem>
+                            <SelectItem value="Fall 2027">{t("Fall 2027", "Осень 2027")}</SelectItem>
+                            <SelectItem value="Spring 2028">{t("Spring 2028", "Весна 2028")}</SelectItem>
+                            <SelectItem value="Flexible">{t("Flexible", "Гибкий")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
