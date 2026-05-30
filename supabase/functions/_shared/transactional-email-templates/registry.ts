@@ -31,6 +31,11 @@ import { template as briefLeadNudge } from './brief-lead-nudge.tsx'
 import { template as cohortWelcome } from './cohort-welcome.tsx'
 import { template as cohortEventReminder } from './cohort-event-reminder.tsx'
 import { template as renewalReceipt } from './renewal-receipt.tsx'
+import { template as welcomeEmail } from './welcome-email.tsx'
+import { template as dripDay7 } from './drip-day-7.tsx'
+import { template as dripDay14 } from './drip-day-14.tsx'
+import { template as strategyReportReady } from './strategy-report-ready.tsx'
+import { template as paymentConfirmation } from './payment-confirmation.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
@@ -55,4 +60,9 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'cohort-welcome': cohortWelcome,
   'cohort-event-reminder': cohortEventReminder,
   'renewal-receipt': renewalReceipt,
+  'welcome-email': welcomeEmail,
+  'drip-day-7': dripDay7,
+  'drip-day-14': dripDay14,
+  'strategy-report-ready': strategyReportReady,
+  'payment-confirmation': paymentConfirmation,
 }
