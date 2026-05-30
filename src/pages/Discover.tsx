@@ -88,6 +88,7 @@ import {
   humanizeDemographic,
   humanizeDegreeLabel,
 } from "@/lib/scholarshipFields";
+import { localizeCountry, localizeDegree, localizeField } from "@/lib/discoverLocalize";
 import { daysUntil } from "@/lib/dates";
 import { ALL_COUNTRIES } from "@/data/countries";
 import { useAuth } from "@/contexts/AuthContext";
@@ -2423,7 +2424,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, lang = 
               <SelectTrigger className="h-7 text-[11px] text-muted-foreground"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("Or pick a specific country…", "Или выбрать страну…")}</SelectItem>
-                {hostCountries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {hostCountries.map(c => <SelectItem key={c} value={c}>{localizeCountry(c, language)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -4093,25 +4094,25 @@ const Discover = ({ language = "en" }: Props) => {
                                   {explicitCountry && (
                                     <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-white px-2.5 py-1 rounded-full bg-gradient-to-r ${countryAccent}`}>
                                       {countryFlag && <span className="text-[12px] leading-none">{countryFlag}</span>}
-                                      {explicitCountry}
+                                      {localizeCountry(explicitCountry, language)}
                                     </span>
                                   )}
                                   {profile.degrees && profile.degrees.length > 0 && (
                                     <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
                                       <GraduationCap className="h-3 w-3 text-gold-dark" />
-                                      {profile.degrees.map(humanizeDegreeLabel).join(" / ")}
+                                      {profile.degrees.map((d) => localizeDegree(humanizeDegreeLabel(d), language)).join(" / ")}
                                     </span>
                                   )}
                                   {profile.field && (
                                     <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
                                       <BookOpen className="h-3 w-3 text-gold-dark" />
-                                      {profile.field}
+                                      {localizeField(profile.field, language)}
                                     </span>
                                   )}
                                   {targetCountryChips.length > 0 && (
                                     <span className="inline-flex items-center gap-1 text-[11px] text-foreground/85 bg-card border border-border/70 px-2.5 py-1 rounded-full font-medium">
                                       <Globe className="h-3 w-3 text-gold-dark" />
-                                      {targetCountryChips.join(" · ")}
+                                      {targetCountryChips.map((c) => localizeCountry(c, language)).join(" · ")}
                                       {(profile.targetCountries?.length ?? 0) > 3 && (
                                         <span className="text-muted-foreground/70">+{profile.targetCountries.length - 3}</span>
                                       )}

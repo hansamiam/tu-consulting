@@ -11,15 +11,16 @@ import { CORS_HEADERS_EXTENDED as corsHeaders, handleCorsOptions } from "../_sha
 import { respondError, respondJson } from "../_shared/http.ts";
 import { createServiceClient, createUserClient } from "../_shared/clients.ts";
 
-// Early-Access tier — $19/mo, $360/yr (annual price TBD).
-// Internal SKU identifier 'founding' preserved (DB rows reference it).
-// Annual price ID is env-wired so it can land via `supabase secrets set`
-// without a code change. If unset, year-interval requests 400 with a
-// clear message — safer than silently aliasing annual → monthly and
-// billing customers the wrong amount.
+// TopUni Membership — $39.99/mo, $299.99/yr (effective $24.99/mo).
+// Internal SKU identifier 'founding' preserved (existing DB rows
+// reference it). The defaults below are the canonical live prices on
+// product prod_UPIZ0f2qRvxvAc; env overrides let staging or future
+// price-revision deploys swap them out via `supabase secrets set`
+// without a code change. The Pricing UI's monthly/annual toggle maps
+// directly onto the `interval` field.
 const FOUNDING_PRICES: { month: string; year: string } = {
-  month: Deno.env.get("STRIPE_PRICE_ID_MONTHLY") ?? "price_1TQTyAQVirFUxpBg4YtW8JFo",
-  year: Deno.env.get("STRIPE_PRICE_ID_ANNUAL") ?? "",
+  month: Deno.env.get("STRIPE_PRICE_ID_MONTHLY") ?? "price_1TbkojQVirFUxpBg5iPsYmBO",
+  year:  Deno.env.get("STRIPE_PRICE_ID_ANNUAL")  ?? "price_1Tci5AQVirFUxpBgit06oeKa",
 };
 
 Deno.serve(async (req) => {
