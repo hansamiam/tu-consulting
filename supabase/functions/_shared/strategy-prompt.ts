@@ -411,6 +411,8 @@ export function buildTail(ctx: PromptContext): string {
       knownScholarships: ctx.knownScholarships,
       targetCountries: ctx.targetCountries,
       nationality: ctx.nationality,
+      curriculumType: ctx.curriculumType,
+      favoriteSubject: ctx.favoriteSubject,
     },
   };
 

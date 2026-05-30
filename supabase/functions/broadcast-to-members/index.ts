@@ -149,8 +149,8 @@ Deno.serve(async (req) => {
     .eq("id", noticeRow.id);
 
   return respondJson(
-    { ok: true, broadcast_id: noticeRow.id, audience_size: audience.length, queued },
     200,
+    { ok: true, broadcast_id: noticeRow.id, audience_size: audience.length, queued },
     corsHeaders,
   );
 });

@@ -97,6 +97,16 @@ export interface PromptContext {
   targetCountries: string[];
   /** Nationality (for cultural-context resolution + signal). */
   nationality: string;
+  /** 2026-05-29 v2 — bachelor-only curriculum type. Drives how the
+   *  prompt weighs the GPA: an IB 38/45 and an AP 4.0 calibrate
+   *  selectivity differently than a national-curriculum 4.0, and an
+   *  A-Level AAA reads differently from any of them. The chip values
+   *  map directly to a one-line framing the model can absorb. */
+  curriculumType?: "ap" | "ib" | "alevel" | "national" | "other";
+  /** 2026-05-29 v2 — bachelor-only favorite subject. Narrative anchor
+   *  for applicants who have thin ECs but can carry a "why this
+   *  discipline" essay through coursework + reading. Bounded text. */
+  favoriteSubject?: string;
   language: Language;
 }
 
@@ -297,6 +307,10 @@ export function projectIntake(profile: any, language: Language): PromptContext {
       : undefined,
     targetCountries: Array.isArray(profile.targetCountries) ? profile.targetCountries : [],
     nationality: (profile.nationality || "").trim(),
+    curriculumType: ["ap", "ib", "alevel", "national", "other"].includes(profile.curriculumType)
+      ? profile.curriculumType
+      : undefined,
+    favoriteSubject: (profile.favoriteSubject || "").trim().slice(0, 120) || undefined,
     language,
   };
 
@@ -335,6 +349,11 @@ export async function profileHashFor(ctx: PromptContext): Promise<string> {
     ks: ctx.knownScholarships ? [...ctx.knownScholarships].sort() : null,
     tc: [...ctx.targetCountries].map((c) => c.toLowerCase()).sort(),
     n: ctx.nationality.toLowerCase(),
+    // Curriculum + favorite subject affect strategy framing — include
+    // in the cache key so an AP-4.0 brief doesn't get served to an
+    // IB-38/45 applicant just because every other intake field matched.
+    ct: ctx.curriculumType,
+    fs: ctx.favoriteSubject?.toLowerCase().slice(0, 80),
     l: ctx.language,
   });
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));

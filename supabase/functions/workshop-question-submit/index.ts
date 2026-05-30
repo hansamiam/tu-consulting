@@ -95,5 +95,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return respondJson({ ok: true, question_id: row.id }, 200, corsHeaders);
+  return respondJson(200, { ok: true, question_id: row.id }, corsHeaders);
 });

@@ -90,5 +90,5 @@ Deno.serve(async (req) => {
     return respondError(500, "deletion failed — please contact support", corsHeaders);
   }
 
-  return respondJson({ ok: true, deleted_at: new Date().toISOString() }, 200, corsHeaders);
+  return respondJson(200, { ok: true, deleted_at: new Date().toISOString() }, corsHeaders);
 });

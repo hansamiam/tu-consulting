@@ -149,13 +149,13 @@ Deno.serve(async (req) => {
   ];
 
   if (allDue.length === 0) {
-    return respondJson({ ok: true, broadcasts: 0, note: "no due rows" }, 200, corsHeaders);
+    return respondJson(200, { ok: true, broadcasts: 0, note: "no due rows" }, corsHeaders);
   }
 
   const members = await loadActiveMembers(admin);
   if (members.length === 0) {
     console.warn("[workshop-broadcast-cron] no active members to broadcast to");
-    return respondJson({ ok: true, broadcasts: 0, note: "no active members" }, 200, corsHeaders);
+    return respondJson(200, { ok: true, broadcasts: 0, note: "no active members" }, corsHeaders);
   }
 
   const results: Array<{ workshop_id: string; lead: "24h" | "1h"; queued: number }> = [];
@@ -169,5 +169,5 @@ Deno.serve(async (req) => {
     results.push({ workshop_id: row.id, lead: leadLabel, queued });
   }
 
-  return respondJson({ ok: true, broadcasts: results.length, results }, 200, corsHeaders);
+  return respondJson(200, { ok: true, broadcasts: results.length, results }, corsHeaders);
 });

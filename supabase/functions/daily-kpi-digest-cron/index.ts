@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
     return respondError(500, "enqueue failed", corsHeaders);
   }
 
-  return respondJson({
+  return respondJson(200, {
     ok: true,
     forDateLabel,
     signups24h,
@@ -151,5 +151,5 @@ Deno.serve(async (req) => {
     churned24h: recentlyCanceled.length,
     wizardCompletions24h,
     wizardToSignupRate,
-  }, 200, corsHeaders);
+  }, corsHeaders);
 });

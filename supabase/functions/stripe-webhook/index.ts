@@ -488,7 +488,7 @@ Deno.serve(async (req) => {
       // Either ON CONFLICT skipped it, or the row already existed.
       // Either way, we've already processed this event_id.
       console.log(`[stripe-webhook] duplicate event ${event.id} (${event.type}) — skipping`);
-      return respondJson({ received: true, duplicate: true }, 200, corsHeaders);
+      return respondJson(200, { received: true, duplicate: true }, corsHeaders);
     }
   }
 
