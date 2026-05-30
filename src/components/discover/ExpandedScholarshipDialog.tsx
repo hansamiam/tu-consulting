@@ -27,7 +27,7 @@ import {
 // future per-profile feature revival — see
 // project_topuni_deep_dive_decisions_2026_05_25.md.
 import { ScholarshipMiniGuide } from "@/components/scholarship/ScholarshipMiniGuide";
-import { AcademyHookCta } from "@/components/discover/AcademyHookCta";
+import { CitizenshipChips } from "@/components/discover/CitizenshipChips";
 import {
   cleanScholarshipName, cleanProvider, humanizeDegreeLabel,
 } from "@/lib/scholarshipFields";
@@ -325,9 +325,11 @@ const DialogBody = ({ s: sProp, profile, onClose, onApply, onSave, isBookmarked,
             <p className="text-sm leading-relaxed text-foreground">
               <span className="font-semibold">{t("Citizenship", "Гражданство")}:</span>{" "}
               <InlineEdit field="eligible_countries" variant="chip-array" value={s.eligible_countries} onSave={editField("eligible_countries", s.eligible_countries)} saving={savingEdit} label="Eligible countries (empty = open to all)">
-                <span className="text-foreground/85">
-                  {renderCitizenship(s.eligible_countries, s.citizenship_requirements, t)}
-                </span>
+                <CitizenshipChips
+                  countries={s.eligible_countries}
+                  summaryFallback={s.citizenship_requirements}
+                  language={lang}
+                />
               </InlineEdit>
             </p>
           </div>
@@ -386,11 +388,12 @@ const DialogBody = ({ s: sProp, profile, onClose, onApply, onSave, isBookmarked,
                 mini-guide quality bar. ScholarshipMiniGuide carries the
                 substantive content. */}
             <ScholarshipMiniGuide scholarshipId={s.scholarship_id} language={lang} hostCountry={s.host_country} />
-            {/* F12 stitch — Academy upsell below the deep-dive analysis.
-                Soft "want help winning this?" pointer to the strategy
-                brief wizard. Doesn't require Academy infra to ship — it
-                nudges to /topuni-ai which is live today. */}
-            <AcademyHookCta variant="detail_sheet" lang={lang} />
+            {/* 2026-05-30 — AcademyHookCta removed from the detail
+                sheet. It duplicated the in-sheet membership upsell
+                (gated insights + save-limit nudge already say "join")
+                for non-members, and was loud noise for active members
+                who don't need a "become a member" pitch on a row they
+                already saved. */}
           </div>
         </div>
       </SheetContent>

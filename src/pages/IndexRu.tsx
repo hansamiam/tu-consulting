@@ -142,12 +142,12 @@ const IndexRu = () => {
                 </Button>
               </motion.div>
 
-              {liveCount !== null && liveCount > 0 && (
-                <motion.p {...fadeUp(0.42)} className="text-[11.5px] sm:text-xs text-foreground/65 mb-10 inline-flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                  Живая база <span className="font-semibold text-foreground tabular-nums">{liveCount}</span> активных стипендий, обновляется ежедневно.
-                </motion.p>
-              )}
+              {/* 2026-05-30 — RU mirror of the EN retirement (Index.tsx
+                  comment from 2026-05-20). The count was undermining
+                  credibility when the catalog was small, and the line
+                  was kept on RU after EN got it removed. Killed here
+                  so both languages match. liveCount state stays for
+                  potential future re-introduction on /discover. */}
             </div>
           </section>
 

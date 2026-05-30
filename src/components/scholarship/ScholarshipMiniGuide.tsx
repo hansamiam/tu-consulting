@@ -31,10 +31,12 @@ import { accentForCountry } from "@/lib/countryAccent";
  * longer rendered here.
  */
 
-// TEMP 2026-05-27: paywall disabled — anyone can see Top Uni Insights.
-// Flip to `false` to restore the members-only gate when the founding-20
-// launch flips. Mirrors the same flag in ScholarshipArchetypeInsight.
-const PUBLIC_INSIGHTS_TEMP = true;
+// 2026-05-30: paywall restored ahead of launch. Insights gated to
+// paying members + admins. Mirrors the same flag in
+// ScholarshipArchetypeInsight. Flipping back to true was a TEMP for
+// visual QA in late May — kept here as a kill-switch for future
+// "open everything for a launch promo" moments.
+const PUBLIC_INSIGHTS_TEMP = false;
 
 interface Props {
   scholarshipId: string;
@@ -279,11 +281,8 @@ const ComingSoonCard = ({
       </p>
       {pick && (
         <div>
-          <p className="text-[13px] text-foreground/65 italic m-0 mb-3">
-            {t(
-              "in the meantime, browse more scholarships",
-              "а пока — посмотрите другие стипендии"
-            )}
+          <p className="text-[11px] uppercase tracking-[0.18em] text-gold-dark font-semibold m-0 mb-2.5">
+            {t("Try this one", "Посмотрите эту")}
           </p>
           <Link
             to={`/scholarships/${pick.scholarship_id}${language === "ru" ? "/ru" : ""}`}
