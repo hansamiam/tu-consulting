@@ -340,6 +340,68 @@ async function queueRenewalReceiptEmail(
   }
 }
 
+// First-payment confirmation. Fires on invoice.payment_succeeded with
+// billing_reason === 'subscription_create' — the first charge of a new
+// subscription. Distinct from renewal-receipt (subscription_cycle) and
+// distinct from membership-welcome (which is engagement, not a receipt).
+//
+// Idempotency keyed by invoice.id so webhook retries don't double-send.
+async function queuePaymentConfirmationEmail(
+  admin: ReturnType<typeof createServiceClient>,
+  email: string,
+  invoice: Stripe.Invoice,
+  tier: "pro" | "founding",
+  userId: string | null,
+) {
+  const amount = (invoice.amount_paid ?? 0) / 100;
+  const currency = (invoice.currency ?? "usd").toUpperCase();
+  const amountFormatted = currency === "USD"
+    ? `$${amount.toFixed(2)}`
+    : `${amount.toFixed(2)} ${currency}`;
+
+  const productLabel = tier === "founding"
+    ? "Top Uni Founding Membership"
+    : "Top Uni Pro";
+
+  const receiptUrl =
+    (invoice as unknown as { hosted_invoice_url?: string }).hosted_invoice_url
+    ?? undefined;
+
+  // Lookup language from profile (extra query, but trivial cost on a
+  // rare event; "en" default if missing so we never block on this).
+  let language: "en" | "ru" = "en";
+  if (userId) {
+    try {
+      const { data } = await admin
+        .from("profiles")
+        .select("language, full_name")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (data?.language === "ru") language = "ru";
+    } catch (e) {
+      console.warn("[stripe-webhook] payment-confirmation profile lookup failed", e);
+    }
+  }
+
+  try {
+    await admin.functions.invoke("send-transactional-email", {
+      body: {
+        recipientEmail: email,
+        templateName: "payment-confirmation",
+        idempotencyKey: `payment-confirmation-${invoice.id}`,
+        templateData: {
+          amountFormatted,
+          productLabel,
+          receiptUrl,
+          language,
+        },
+      },
+    });
+  } catch (e) {
+    console.warn("[stripe-webhook] payment-confirmation enqueue failed", e);
+  }
+}
+
 async function queuePaymentFailedEmail(
   admin: ReturnType<typeof createServiceClient>,
   stripe: Stripe,
@@ -533,6 +595,29 @@ Deno.serve(async (req) => {
               ? invoice.customer
               : invoice.customer?.id ?? null;
             await queueRenewalReceiptEmail(admin, stripe, userEmail, invoice, customerId, tier);
+          } else if (
+            billingReason === "subscription_create"
+            && userEmail
+            && invoice.id
+          ) {
+            // First charge of a new subscription — fire payment-confirmation.
+            // Distinct from renewal-receipt (subscription_cycle) and
+            // membership-welcome (engagement, not receipt).
+            const item = sub.items.data[0];
+            const priceId = item?.price?.id;
+            const tier = (priceId && PRICE_MAP[priceId]?.tier) ?? "pro";
+            const { data: profile } = await admin
+              .from("profiles")
+              .select("user_id")
+              .eq("email", userEmail)
+              .maybeSingle();
+            await queuePaymentConfirmationEmail(
+              admin,
+              userEmail,
+              invoice,
+              tier,
+              profile?.user_id ?? null,
+            );
           } else if (billingReason === "subscription_cycle" && (!userEmail || !invoice.id)) {
             const customerId = typeof invoice.customer === "string"
               ? invoice.customer
