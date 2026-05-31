@@ -25,13 +25,12 @@ const COPY = {
       'Building a scholarship shortlist they didn\'t know existed.',
       'Pressure-testing a list they already have.',
     ],
-    bodyTwo: 'Either takes under ten minutes with the wizard.',
+    bodyTwo: 'The wizard handles either.',
     calNote: 'Or if you\'d rather talk it through first, book a free 15-minute call. No pitch, just help.',
     ctaWizard: 'Open the wizard',
     ctaCal: 'Book a 15-min call',
     finalNote: 'This is the last email in this sequence.',
-    signoff: 'Sam Han',
-    signoffTitle: 'Founder, Top Uni',
+    signoff: '— The Top Uni team',
     footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
@@ -48,13 +47,12 @@ const COPY = {
       'Найти стипендии, о которых не знали.',
       'Проверить список, который уже есть.',
     ],
-    bodyTwo: 'С мастером — менее десяти минут.',
+    bodyTwo: 'Мастер справится с обоими.',
     calNote: 'Или если сначала хотите поговорить — запишитесь на 15-минутный звонок. Без питча, просто помощь.',
     ctaWizard: 'Открыть мастер',
     ctaCal: 'Записаться на звонок',
     finalNote: 'Это последнее письмо в этой серии.',
-    signoff: 'Сэм Хан',
-    signoffTitle: 'Основатель, Top Uni',
+    signoff: '— Команда Top Uni',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
@@ -101,7 +99,7 @@ const DripDay14Email = ({ name, wizardUrl = 'https://topuni.org/topuni-ai', calU
             )}
             <Hr style={styles.divider} />
             <Text style={styles.bodySmall}>{c.finalNote}</Text>
-            <Text style={styles.signoff}>{c.signoff}<br />{c.signoffTitle}</Text>
+            <Text style={styles.signoff}>{c.signoff}</Text>
           </Section>
 
           <Section style={styles.footer}>

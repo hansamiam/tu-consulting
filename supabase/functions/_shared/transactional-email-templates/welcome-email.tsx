@@ -16,35 +16,33 @@ interface Props {
 const COPY = {
   en: {
     htmlLang: 'en',
-    preview: 'One thing to do right now — start the 3-step wizard.',
+    preview: 'Your personalized scholarship strategy starts with the wizard.',
     headingNamed: (n: string) => `Welcome, ${n}.`,
     headingNeutral: 'Welcome to Top Uni.',
-    lead: 'Top Uni is the scholarship search engine and AI strategy tool for international students. Your personalized strategy is four minutes away.',
-    note: 'The wizard asks three questions. The output is a concrete scholarship shortlist and the first action step — not generic advice.',
-    cta: 'Start your strategy',
+    lead: 'Top Uni is the scholarship search engine and AI strategy tool for international students.',
+    note: 'The wizard walks you through your background, academics, and goals — then produces a concrete shortlist and the first action step. No generic advice.',
+    cta: 'Start the wizard',
     expectations: 'We only email when something requires your attention.',
     footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
-    signoff: 'Sam Han',
-    signoffTitle: 'Founder, Top Uni',
+    signoff: '— The Top Uni team',
     subject: (n: string) => n ? `Welcome to Top Uni, ${n}` : 'Welcome to Top Uni',
     tagline: 'Scholarship Strategy',
   },
   ru: {
     htmlLang: 'ru',
-    preview: 'Одно действие прямо сейчас — запустить 3-шаговый мастер.',
+    preview: 'Ваша персональная стратегия стипендий начинается с мастера.',
     headingNamed: (n: string) => `Добро пожаловать, ${n}.`,
     headingNeutral: 'Добро пожаловать в Top Uni.',
-    lead: 'Top Uni — поисковик стипендий и инструмент AI-стратегии для иностранных студентов. Ваша персональная стратегия — в четырёх минутах.',
-    note: 'Мастер задаёт три вопроса. Результат — конкретный шорт-лист стипендий и первый шаг. Без общих советов.',
-    cta: 'Начать стратегию',
+    lead: 'Top Uni — поисковик стипендий и инструмент AI-стратегии для иностранных студентов.',
+    note: 'Мастер пройдёт с вами по вашему профилю, академическим показателям и целям — на выходе конкретный шорт-лист и первый шаг. Без общих советов.',
+    cta: 'Запустить мастер',
     expectations: 'Мы пишем только когда требуется ваше внимание.',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
-    signoff: 'Сэм Хан',
-    signoffTitle: 'Основатель, Top Uni',
+    signoff: '— Команда Top Uni',
     subject: (n: string) => n ? `Добро пожаловать в Top Uni, ${n}` : 'Добро пожаловать в Top Uni',
     tagline: 'Стипендиальная Стратегия',
   },
@@ -75,7 +73,7 @@ const WelcomeEmail = ({ name, wizardUrl = 'https://topuni.org/topuni-ai', unsubs
             </Section>
             <Hr style={styles.divider} />
             <Text style={styles.bodySmall}>{c.expectations}</Text>
-            <Text style={styles.signoff}>{c.signoff}<br />{c.signoffTitle}</Text>
+            <Text style={styles.signoff}>{c.signoff}</Text>
           </Section>
 
           <Section style={styles.footer}>

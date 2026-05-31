@@ -20,10 +20,9 @@ const COPY = {
     headingNamed: (n: string) => `${n}, a quick question.`,
     headingNeutral: 'A quick question.',
     body: "You created your Top Uni account a week ago but haven't run the wizard yet.",
-    bodyTwo: 'What\'s blocking you? Four minutes, three questions, a concrete shortlist on the other side.',
+    bodyTwo: 'What\'s blocking you? The wizard produces a concrete shortlist — not generic advice.',
     cta: 'Run the wizard',
-    signoff: 'Sam Han',
-    signoffTitle: 'Founder, Top Uni',
+    signoff: '— The Top Uni team',
     footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
@@ -36,10 +35,9 @@ const COPY = {
     headingNamed: (n: string) => `${n}, быстрый вопрос.`,
     headingNeutral: 'Быстрый вопрос.',
     body: 'Вы создали аккаунт Top Uni неделю назад, но ещё не запустили мастер.',
-    bodyTwo: 'Что мешает? Четыре минуты, три вопроса — на выходе конкретный шорт-лист.',
+    bodyTwo: 'Что мешает? Мастер выдаёт конкретный шорт-лист — без общих советов.',
     cta: 'Запустить мастер',
-    signoff: 'Сэм Хан',
-    signoffTitle: 'Основатель, Top Uni',
+    signoff: '— Команда Top Uni',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
@@ -71,7 +69,7 @@ const DripDay7Email = ({ name, wizardUrl = 'https://topuni.org/topuni-ai', unsub
             <Section style={styles.ctaWrap}>
               <Link href={wizardUrl} style={styles.ctaPrimary}>{c.cta}</Link>
             </Section>
-            <Text style={styles.signoff}>{c.signoff}<br />{c.signoffTitle}</Text>
+            <Text style={styles.signoff}>{c.signoff}</Text>
           </Section>
 
           <Section style={styles.footer}>

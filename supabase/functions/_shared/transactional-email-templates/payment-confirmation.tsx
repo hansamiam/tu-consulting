@@ -26,7 +26,7 @@ const COPY = {
     forLabel: 'For',
     cta: 'Go to dashboard',
     receiptNote: 'Official Stripe receipt',
-    signoff: 'Top Uni',
+    signoff: '— The Top Uni team',
     footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
@@ -43,7 +43,7 @@ const COPY = {
     forLabel: 'За',
     cta: 'Перейти в дашборд',
     receiptNote: 'Официальный чек Stripe',
-    signoff: 'Top Uni',
+    signoff: '— Команда Top Uni',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
@@ -102,7 +102,7 @@ const PaymentConfirmationEmail = ({
                 {c.receiptNote}: <a href={receiptUrl} style={{ color: brand.ink, textDecoration: 'underline' }}>{receiptUrl}</a>
               </Text>
             )}
-            <Text style={styles.signoff}>— {c.signoff}</Text>
+            <Text style={styles.signoff}>{c.signoff}</Text>
           </Section>
 
           <Section style={styles.footer}>

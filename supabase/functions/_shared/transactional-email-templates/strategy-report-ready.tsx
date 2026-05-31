@@ -21,7 +21,7 @@ const COPY = {
     headingNeutral: 'Your strategy is ready.',
     body: 'Personalized scholarship strategy, shortlist, and the first action step are inside.',
     cta: 'Open my strategy',
-    signoff: 'Top Uni',
+    signoff: '— The Top Uni team',
     footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
@@ -35,7 +35,7 @@ const COPY = {
     headingNeutral: 'Ваша стратегия готова.',
     body: 'Внутри персональная стратегия стипендий, шорт-лист и первый шаг.',
     cta: 'Открыть стратегию',
-    signoff: 'Top Uni',
+    signoff: '— Команда Top Uni',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
@@ -66,7 +66,7 @@ const StrategyReportReadyEmail = ({ name, reportUrl, unsubscribeUrl, language = 
             <Section style={styles.ctaWrap}>
               <Link href={reportUrl} style={styles.ctaPrimary}>{c.cta}</Link>
             </Section>
-            <Text style={styles.signoff}>— {c.signoff}</Text>
+            <Text style={styles.signoff}>{c.signoff}</Text>
           </Section>
 
           <Section style={styles.footer}>
