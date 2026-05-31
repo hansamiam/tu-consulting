@@ -37,7 +37,12 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-transactional-email]
-verify_jwt = true
+# 2026-05-31: flipped to false so pg triggers (handle_new_user → welcome-email,
+# Stripe webhook → payment-confirmation, strategy-completion → strategy-report-ready)
+# can call the enqueuer with the app_cron_token without the gateway pre-rejecting.
+# Self-gates via requireAdminOrService(req) — service-role bearer or admin user
+# JWT only. Same pattern as process-email-queue.
+verify_jwt = false
 
 [functions.preview-transactional-email]
 verify_jwt = false
