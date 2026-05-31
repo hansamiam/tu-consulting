@@ -114,5 +114,7 @@ export default function StrategyRead({ language: pageLanguage = "en" }: Props) {
     );
   }
 
-  return <StrategyDossier report={report} />;
+  // window.location.href already carries the persistent token-gated URL
+  // (/topuni-ai/r/:id?t=token), so it's the right thing to share.
+  return <StrategyDossier report={report} shareUrl={typeof window !== "undefined" ? window.location.href : undefined} />;
 }

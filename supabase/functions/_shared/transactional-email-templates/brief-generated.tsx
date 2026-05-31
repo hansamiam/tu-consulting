@@ -20,11 +20,11 @@ interface Props {
 
 const COPY = {
   en: {
-    kicker: 'Top Uni · Strategy Report',
+    kicker: 'TopUni · Strategy report',
     greetingNamed: (n: string) => `${n}, your strategy is ready.`,
     greetingNeutral: 'Your strategy is ready.',
     subline: 'We diagnosed your fit, named the blindspot, and mapped your pivot.',
-    previewFallback: 'Your Top Uni strategy report is ready to read.',
+    previewFallback: 'Your TopUni strategy report is ready to read.',
     openBrief: 'Open my report',
     insideTitle: "What's inside",
     insideRows: [
@@ -34,15 +34,15 @@ const COPY = {
       ['Target Opportunity', 'the strategic category to aim for — not a school list.'],
     ] as const,
     saveLink: 'This link is yours. Save it — your strategy stays accessible as long as you have an account.',
-    teamSignoff: '— The Top Uni Team',
+    teamSignoff: '— TopUni team',
     htmlLang: 'en',
   },
   ru: {
-    kicker: 'Top Uni · Стратегический отчёт',
+    kicker: 'TopUni · Стратегический отчёт',
     greetingNamed: (n: string) => `${n}, ваша стратегия готова.`,
     greetingNeutral: 'Ваша стратегия готова.',
     subline: 'Мы диагностировали ваш fit, назвали blindspot и обозначили pivot.',
-    previewFallback: 'Ваш стратегический отчёт Top Uni готов к прочтению.',
+    previewFallback: 'Ваш стратегический отчёт TopUni готов к прочтению.',
     openBrief: 'Открыть отчёт',
     insideTitle: 'Что внутри',
     insideRows: [
@@ -52,7 +52,7 @@ const COPY = {
       ['Target Opportunity', 'стратегическая категория — не список школ.'],
     ] as const,
     saveLink: 'Эта ссылка — ваша. Сохраните её — стратегия остаётся доступной, пока у вас есть аккаунт.',
-    teamSignoff: '— Команда Top Uni',
+    teamSignoff: '— Команда TopUni',
     htmlLang: 'ru',
   },
 } as const

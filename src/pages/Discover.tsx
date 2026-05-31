@@ -2424,7 +2424,7 @@ const FiltersPanel = ({ filters, setFilters, activeCount, hostCountries, lang = 
               <SelectTrigger className="h-7 text-[11px] text-muted-foreground"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("Or pick a specific country…", "Или выбрать страну…")}</SelectItem>
-                {hostCountries.map(c => <SelectItem key={c} value={c}>{localizeCountry(c, language)}</SelectItem>)}
+                {hostCountries.map(c => <SelectItem key={c} value={c}>{localizeCountry(c, lang)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
