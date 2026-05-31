@@ -377,6 +377,15 @@ async function findRelatedScholarships(
 
   // Same host country first — most relevant signal we have without
   // pulling the matcher pipeline.
+  //
+  // Visibility gate must mirror Discover (DiscoverApp.tsx) — `verified`
+  // alone leaks rows whose cycle has closed (lifecycle_status =
+  // closed_archived) or that the publish-gate has since pulled
+  // (is_published = false). top_insights live in a side table, so a
+  // hand-curated row stays around long after its scholarship was
+  // pulled from Discover. Without is_published + lifecycle the
+  // ComingSoonCard surfaces invisible scholarships the reader can't
+  // open from the catalog.
   if (hostCountry) {
     const { data } = await supabase
       .from("scholarship_mini_guides")
@@ -384,6 +393,8 @@ async function findRelatedScholarships(
       .not("top_insights", "is", null)
       .neq("scholarship_id", excludeId)
       .eq("scholarships.verified", true)
+      .eq("scholarships.is_published", true)
+      .in("scholarships.lifecycle_status", ["active", "reopens_annually"])
       .eq("scholarships.host_country", hostCountry)
       .limit(desiredCount);
     push(data as unknown as Row[] | null);
@@ -397,6 +408,8 @@ async function findRelatedScholarships(
       .not("top_insights", "is", null)
       .neq("scholarship_id", excludeId)
       .eq("scholarships.verified", true)
+      .eq("scholarships.is_published", true)
+      .in("scholarships.lifecycle_status", ["active", "reopens_annually"])
       .limit(desiredCount * 2);
     push(data as unknown as Row[] | null);
   }
