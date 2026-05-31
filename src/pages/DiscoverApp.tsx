@@ -360,6 +360,23 @@ const DiscoverApp = ({ language = "en" }: Props) => {
         </div>
       </section>
 
+      {/* Permanent beta notice — kept non-dismissable while the catalog
+          is still growing and verification is per-cycle hand-curated.
+          Points readers back to the official source so a stale deadline
+          or eligibility row in our DB can't burn an application. */}
+      <div className="border-b border-gold/30 bg-gold/[0.06]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-2.5">
+          <p className="text-[12.5px] leading-snug text-foreground/75 m-0">
+            <span className="font-semibold text-gold-dark uppercase tracking-[0.18em] text-[10.5px] mr-2">
+              {isRu ? "Бета" : "Beta"}
+            </span>
+            {isRu
+              ? "Каталог пополняется — всегда сверяйте дедлайн и требования на официальном сайте перед подачей."
+              : "Catalog is still growing — always verify deadlines and eligibility on the official site before applying."}
+          </p>
+        </div>
+      </div>
+
       <div id="discover-tools" className="max-w-7xl mx-auto px-6 lg:px-10 py-10">
         <div className="grid lg:grid-cols-12 gap-10">
           {/* LEFT — Sticky profile rail */}
