@@ -25,7 +25,7 @@ const COPY = {
     greetingNeutral: 'Your strategy is ready.',
     subline: 'We diagnosed your fit, named the blindspot, and mapped your pivot.',
     previewFallback: 'Your TopUni strategy report is ready to read.',
-    openBrief: 'Open my report',
+    openBrief: 'Get your strategy',
     insideTitle: "What's inside",
     insideRows: [
       ['Readiness Score', 'where you stand across 5 axes, honest about gaps.'],
@@ -43,7 +43,7 @@ const COPY = {
     greetingNeutral: 'Ваша стратегия готова.',
     subline: 'Мы диагностировали ваш fit, назвали blindspot и обозначили pivot.',
     previewFallback: 'Ваш стратегический отчёт TopUni готов к прочтению.',
-    openBrief: 'Открыть отчёт',
+    openBrief: 'Получить стратегию',
     insideTitle: 'Что внутри',
     insideRows: [
       ['Уровень готовности', 'где вы находитесь по 5 осям — честно о пробелах.'],
@@ -67,7 +67,16 @@ const BriefGeneratedEmail = ({
 
   return (
     <Html lang={c.htmlLang} dir="ltr">
-      <Head />
+      <Head>
+        {/* Match website typography (tailwind.config: heading=Montserrat,
+            sans=Inter). Apple Mail + Gmail web load these reliably; Outlook
+            falls through to the system-font fallback chain on the style
+            objects below. */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap"
+        />
+      </Head>
       <Preview>{c.previewFallback}</Preview>
       <Body style={main}>
         <Container style={container}>
@@ -108,7 +117,7 @@ export const template = {
     if (isRu) {
       return name ? `${name}, ваша стратегия готова` : 'Ваша стратегия готова'
     }
-    return name ? `${name}, your strategy is ready` : 'Your Top Uni strategy is ready'
+    return name ? `${name}, your strategy is ready` : 'Your TopUni strategy is ready'
   }),
   displayName: 'Strategy ready — open it now',
   previewData: {
@@ -118,14 +127,25 @@ export const template = {
   },
 } satisfies TemplateEntry
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Georgia, serif' }
-const container = { padding: '32px 28px', maxWidth: '560px' }
-const h1 = { fontSize: '24px', fontWeight: 'bold', color: '#0a2540', margin: '4px 0 8px', lineHeight: '1.25' }
-const h3 = { fontSize: '13px', fontWeight: 'bold', color: '#0a2540', margin: '4px 0 10px', textTransform: 'uppercase' as const, letterSpacing: '0.1em' }
-const subline = { fontSize: '14px', color: '#5d6b7a', margin: '0 0 22px', lineHeight: '1.5' }
-const kicker = { fontSize: '11px', fontWeight: 'bold', color: '#b8860b', textTransform: 'uppercase' as const, letterSpacing: '0.22em', margin: '0 0 6px' }
-const text = { fontSize: '14px', color: '#3c4858', lineHeight: '1.7', margin: '0 0 8px' }
+// Email styles — mirror the website's brand:
+//   - heading: Montserrat (with Helvetica/Arial fallback for email clients
+//     that don't load web fonts)
+//   - body: Inter (same fallback chain)
+//   - colors: brand-navy (#0a2540) + gold-dark (#b8860b) + slate body
+// Email clients that ignore web fonts (Outlook, some corporate clients)
+// fall back to system sans-serif — still clean, just not the branded
+// Montserrat headline weight.
+const FONT_BODY = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+const FONT_HEADING = "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+
+const main = { backgroundColor: '#f6f5f1', fontFamily: FONT_BODY }
+const container = { padding: '32px 28px', maxWidth: '560px', backgroundColor: '#ffffff', borderRadius: '8px' }
+const h1 = { fontFamily: FONT_HEADING, fontSize: '26px', fontWeight: 700, color: '#0a2540', margin: '4px 0 8px', lineHeight: '1.22', letterSpacing: '-0.01em' }
+const h3 = { fontFamily: FONT_HEADING, fontSize: '12px', fontWeight: 700, color: '#0a2540', margin: '4px 0 10px', textTransform: 'uppercase' as const, letterSpacing: '0.14em' }
+const subline = { fontFamily: FONT_BODY, fontSize: '15px', color: '#5d6b7a', margin: '0 0 22px', lineHeight: '1.55' }
+const kicker = { fontFamily: FONT_HEADING, fontSize: '11px', fontWeight: 700, color: '#b8860b', textTransform: 'uppercase' as const, letterSpacing: '0.22em', margin: '0 0 6px' }
+const text = { fontFamily: FONT_BODY, fontSize: '14px', color: '#3c4858', lineHeight: '1.7', margin: '0 0 8px' }
 const btnWrap = { textAlign: 'center' as const, margin: '8px 0 4px' }
-const primaryBtn = { backgroundColor: '#0a2540', color: '#ffffff', padding: '14px 32px', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', textDecoration: 'none' }
-const hr = { borderColor: '#e6ebf1', margin: '24px 0' }
-const footer = { fontSize: '12px', color: '#8898aa', margin: '6px 0' }
+const primaryBtn = { fontFamily: FONT_HEADING, backgroundColor: '#0a2540', color: '#ffffff', padding: '14px 32px', borderRadius: '8px', fontSize: '15px', fontWeight: 700, textDecoration: 'none', letterSpacing: '0.02em' }
+const hr = { borderColor: '#e4e1d6', margin: '24px 0' }
+const footer = { fontFamily: FONT_BODY, fontSize: '12px', color: '#8898aa', margin: '6px 0' }
