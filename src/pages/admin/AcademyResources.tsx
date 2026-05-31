@@ -29,7 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Upload, ExternalLink, FileText, Link as LinkIcon } from "lucide-react";
+import { Trash2, Upload, ExternalLink, FileText, Link as LinkIcon, Gift, Star } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface ResourceRow {
@@ -45,6 +45,7 @@ interface ResourceRow {
   language: "en" | "ru" | string;
   access_tier: "free" | "member" | string;
   is_published: boolean;
+  is_welcome_gift: boolean;
   sort_order: number;
 }
 
@@ -181,6 +182,61 @@ const AcademyResources = () => {
     const { error } = await supabase
       .from("academy_resources" as never)
       .update({ is_published: !row.is_published } as never)
+      .eq("id", row.id);
+    setBusyId(null);
+    if (error) {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    await fetchAll();
+  };
+
+  // Exactly one welcome gift can be active at a time — enforced at the DB
+  // by a partial unique index on (is_welcome_gift) WHERE is_welcome_gift.
+  // To swap which row gets the flag we have to clear ALL rows first, then
+  // set the new one in one txn. Otherwise the UPDATE that promotes a new
+  // row collides with the still-flagged old row. We do the two updates
+  // sequentially since supabase-js doesn't expose a transactional RPC for
+  // this; the worst-case race (zero welcome gift for ~80ms between calls)
+  // is acceptable — the stripe-webhook fallback already silently no-ops
+  // when no row is flagged.
+  const setWelcomeGift = async (row: ResourceRow) => {
+    if (!row.is_published) {
+      toast({
+        title: "Publish the row first",
+        description: "The welcome-gift email links to the file; an unpublished row can't be granted.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setBusyId(row.id);
+    try {
+      // Step 1: clear any existing welcome-gift flag.
+      const { error: clearErr } = await supabase
+        .from("academy_resources" as never)
+        .update({ is_welcome_gift: false } as never)
+        .eq("is_welcome_gift", true);
+      if (clearErr) throw new Error(clearErr.message);
+      // Step 2: set this row.
+      const { error: setErr } = await supabase
+        .from("academy_resources" as never)
+        .update({ is_welcome_gift: true } as never)
+        .eq("id", row.id);
+      if (setErr) throw new Error(setErr.message);
+      toast({ title: "Welcome gift set", description: `New members will receive "${row.title}".` });
+      await fetchAll();
+    } catch (e) {
+      toast({ title: "Couldn't set gift", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const clearWelcomeGift = async (row: ResourceRow) => {
+    setBusyId(row.id);
+    const { error } = await supabase
+      .from("academy_resources" as never)
+      .update({ is_welcome_gift: false } as never)
       .eq("id", row.id);
     setBusyId(null);
     if (error) {
@@ -387,6 +443,11 @@ const AcademyResources = () => {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-foreground text-[15px] leading-snug truncate">{r.title}</h3>
+                          {r.is_welcome_gift && (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-gold/20 text-gold-dark border border-gold/40">
+                              <Gift className="h-3 w-3" /> Welcome gift
+                            </span>
+                          )}
                           <span className={`text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded ${
                             r.access_tier === "member" ? "bg-gold/15 text-gold-dark" : "bg-emerald-100 text-emerald-700"
                           }`}>{r.access_tier}</span>
@@ -414,6 +475,15 @@ const AcademyResources = () => {
                           <span className="text-[11px] text-muted-foreground">{r.is_published ? "Live" : "Draft"}</span>
                         </div>
                         <div className="flex gap-1.5">
+                          <Button
+                            size="sm"
+                            variant={r.is_welcome_gift ? "default" : "outline"}
+                            onClick={() => (r.is_welcome_gift ? clearWelcomeGift(r) : setWelcomeGift(r))}
+                            disabled={busyId === r.id}
+                            title={r.is_welcome_gift ? "Clear welcome-gift flag" : "Set as the post-signup welcome gift"}
+                          >
+                            <Star className={`h-3.5 w-3.5 ${r.is_welcome_gift ? "fill-current" : ""}`} />
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => previewFile(r)} disabled={busyId === r.id}>
                             Preview
                           </Button>

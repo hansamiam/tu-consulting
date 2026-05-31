@@ -23,9 +23,15 @@ import { ReadinessHero } from "./sections/ReadinessHero";
 import { HonestDiagnosis } from "./sections/HonestDiagnosis";
 import { StrategicMoves } from "./sections/StrategicMoves";
 import { MembershipCTA } from "./sections/MembershipCTA";
+import { ShareDossierButton } from "./ShareDossierButton";
 
 interface Props {
   report: StrategyReportV2;
+  /** When set, renders a Share button at the top of the dossier that
+   *  links to this URL. Pass window.location.href from the persistent
+   *  /topuni-ai/r/:id reader; omit on the live wizard-stream view where
+   *  the URL doesn't yet point at a saved report. */
+  shareUrl?: string;
 }
 
 const REVEAL_STAGGER = 0.07;
@@ -45,13 +51,25 @@ const Reveal = ({ index, children }: { index: number; children: ReactNode }) => 
   </motion.div>
 );
 
-export const StrategyDossier = ({ report }: Props) => {
+export const StrategyDossier = ({ report, shareUrl }: Props) => {
   let idx = 0;
   const next = () => idx++;
+  const reportTitle = report.firstName
+    ? (report.language === "ru" ? `Стратегия — ${report.firstName}` : `${report.firstName}'s strategy`)
+    : undefined;
 
   return (
     <main className="min-h-screen bg-[hsl(38_28%_95%)] print:bg-white">
       <div className="mx-auto max-w-[720px] px-4 sm:px-8 py-8 sm:py-12 print:py-0 print:px-0">
+        {shareUrl && (
+          <div className="flex justify-end mb-3 print:hidden">
+            <ShareDossierButton
+              shareUrl={shareUrl}
+              language={report.language}
+              reportTitle={reportTitle}
+            />
+          </div>
+        )}
         <div
           className="bg-white border border-foreground/12 rounded-md shadow-[0_2px_24px_-8px_rgba(0,0,0,0.12)] px-6 sm:px-10 py-7 sm:py-9 print:shadow-none print:border-0 print:rounded-none print:px-0 print:py-4"
           data-strategy-page
