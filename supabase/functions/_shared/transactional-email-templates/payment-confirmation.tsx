@@ -4,6 +4,7 @@ import {
   Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { styles, brand } from './brand.ts'
 
 interface Props {
   name?: string
@@ -21,34 +22,40 @@ const COPY = {
     preview: (amount: string) => `Payment confirmed — ${amount}`,
     headingNamed: (n: string) => `${n}, payment confirmed.`,
     headingNeutral: 'Payment confirmed.',
-    charged: (amount: string, product: string) => `${amount} charged for ${product}.`,
-    unlocked: 'Your dashboard is ready.',
-    dashboardCta: 'Go to dashboard',
-    receiptNote: 'Official receipt:',
-    footerPause: "Don't want these emails? ",
+    receiptLabel: 'Amount',
+    forLabel: 'For',
+    cta: 'Go to dashboard',
+    receiptNote: 'Official Stripe receipt',
+    signoff: 'Top Uni',
+    footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
-    signoff: '— The Top Uni Team',
     subject: (n: string, amount: string) =>
-      n ? `${n} — Top Uni payment confirmed (${amount})` : `Top Uni — payment confirmed (${amount})`,
+      n ? `${n} · Top Uni payment confirmed (${amount})` : `Top Uni · payment confirmed (${amount})`,
+    tagline: 'Scholarship Strategy',
   },
   ru: {
     htmlLang: 'ru',
     preview: (amount: string) => `Оплата подтверждена — ${amount}`,
     headingNamed: (n: string) => `${n}, оплата подтверждена.`,
     headingNeutral: 'Оплата подтверждена.',
-    charged: (amount: string, product: string) => `${amount} списано за ${product}.`,
-    unlocked: 'Ваш дашборд готов.',
-    dashboardCta: 'Перейти в дашборд',
-    receiptNote: 'Официальный чек:',
+    receiptLabel: 'Сумма',
+    forLabel: 'За',
+    cta: 'Перейти в дашборд',
+    receiptNote: 'Официальный чек Stripe',
+    signoff: 'Top Uni',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
-    signoff: '— Команда Top Uni',
     subject: (n: string, amount: string) =>
-      n ? `${n} — Top Uni оплата подтверждена (${amount})` : `Top Uni — оплата подтверждена (${amount})`,
+      n ? `${n} · Top Uni — оплата подтверждена (${amount})` : `Top Uni — оплата подтверждена (${amount})`,
+    tagline: 'Стипендиальная Стратегия',
   },
 } as const
+
+const receiptRow = { padding: '10px 0', borderBottom: `1px solid ${brand.divider}` } as const
+const receiptLabel = { fontSize: '12px', color: brand.muted, textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: '0 0 4px' } as const
+const receiptValue = { fontSize: '16px', color: brand.ink, fontWeight: 'bold' as const, margin: 0 } as const
 
 const PaymentConfirmationEmail = ({
   name,
@@ -64,26 +71,48 @@ const PaymentConfirmationEmail = ({
     <Html lang={c.htmlLang} dir="ltr">
       <Head />
       <Preview>{c.preview(amountFormatted)}</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Heading style={h1}>{name ? c.headingNamed(name) : c.headingNeutral}</Heading>
-          <Text style={lead}>{c.charged(amountFormatted, productLabel)}</Text>
-          <Text style={lead}>{c.unlocked}</Text>
-          <Section style={btnWrap}>
-            <Link href={dashboardUrl} style={primaryBtn}>{c.dashboardCta}</Link>
+      <Body style={styles.page}>
+        <Container style={styles.container}>
+          <Section style={styles.masthead}>
+            <Text style={styles.wordmark}>Top Uni</Text>
+            <Text style={styles.tagline}>{c.tagline}</Text>
           </Section>
-          {receiptUrl && (
-            <Text style={receiptLine}>
-              {c.receiptNote} <a href={receiptUrl} style={subtleLink}>{receiptUrl}</a>
-            </Text>
-          )}
-          <Hr style={hr} />
-          {unsubscribeUrl && (
-            <Text style={footer}>
-              {c.footerPause}<a href={unsubscribeUrl} style={subtleLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
-            </Text>
-          )}
-          <Text style={footer}>{c.signoff}</Text>
+
+          <Section style={styles.card}>
+            <Heading as="h1" style={styles.h1}>
+              {name ? c.headingNamed(name) : c.headingNeutral}
+            </Heading>
+            <Hr style={styles.goldRule} />
+
+            <Section style={receiptRow}>
+              <Text style={receiptLabel}>{c.receiptLabel}</Text>
+              <Text style={receiptValue}>{amountFormatted}</Text>
+            </Section>
+            <Section style={receiptRow}>
+              <Text style={receiptLabel}>{c.forLabel}</Text>
+              <Text style={receiptValue}>{productLabel}</Text>
+            </Section>
+
+            <Section style={{ ...styles.ctaWrap, marginTop: '28px' }}>
+              <Link href={dashboardUrl} style={styles.ctaPrimary}>{c.cta}</Link>
+            </Section>
+
+            {receiptUrl && (
+              <Text style={{ ...styles.bodySmall, marginTop: '20px' }}>
+                {c.receiptNote}: <a href={receiptUrl} style={{ color: brand.ink, textDecoration: 'underline' }}>{receiptUrl}</a>
+              </Text>
+            )}
+            <Text style={styles.signoff}>— {c.signoff}</Text>
+          </Section>
+
+          <Section style={styles.footer}>
+            {unsubscribeUrl && (
+              <Text style={styles.footerLine}>
+                {c.footerPause}<a href={unsubscribeUrl} style={styles.footerLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
+              </Text>
+            )}
+            <Text style={styles.footerLine}>Top Uni · topuni.org</Text>
+          </Section>
         </Container>
       </Body>
     </Html>
@@ -110,14 +139,3 @@ export const template = {
     language: 'en',
   },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '32px 28px', maxWidth: '560px' }
-const h1 = { fontSize: '22px', fontWeight: 'bold', color: '#0a2540', margin: '0 0 14px', lineHeight: '1.3' }
-const lead = { fontSize: '15px', color: '#3c4858', lineHeight: '1.55', margin: '0 0 10px' }
-const btnWrap = { margin: '18px 0 14px' }
-const primaryBtn = { backgroundColor: '#0a2540', color: '#ffffff', padding: '10px 22px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-block' }
-const receiptLine = { fontSize: '12px', color: '#8898aa', margin: '12px 0 0', wordBreak: 'break-all' as const }
-const hr = { borderColor: '#e6ebf1', margin: '24px 0' }
-const subtleLink = { color: '#0a2540', textDecoration: 'underline' }
-const footer = { fontSize: '12px', color: '#8898aa', margin: '6px 0' }

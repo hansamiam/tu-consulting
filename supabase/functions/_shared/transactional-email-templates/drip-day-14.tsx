@@ -1,9 +1,10 @@
 /// <reference types="npm:@types/react@18.3.1" />
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Button, Container, Head, Heading, Hr, Html, Preview, Text,
+  Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { styles } from './brand.ts'
 
 interface Props {
   name?: string
@@ -19,34 +20,50 @@ const COPY = {
     preview: 'Still thinking it over? One concrete use case inside.',
     headingNamed: (n: string) => `${n}, still thinking it over?`,
     headingNeutral: 'Still thinking it over?',
-    body: "Most students use Top Uni for one of two things: building a scholarship shortlist they didn't know existed, or pressure-testing a list they already have. Either takes under 10 minutes with the wizard.",
-    calNote: "If you'd rather talk through your situation first, book a free 15-min call — no pitch, just help.",
+    body: 'Most students use Top Uni for one of two things:',
+    bullets: [
+      'Building a scholarship shortlist they didn\'t know existed.',
+      'Pressure-testing a list they already have.',
+    ],
+    bodyTwo: 'Either takes under ten minutes with the wizard.',
+    calNote: 'Or if you\'d rather talk it through first, book a free 15-minute call. No pitch, just help.',
     ctaWizard: 'Open the wizard',
     ctaCal: 'Book a 15-min call',
-    footerFinal: 'This is the last email in this sequence.',
-    footerPause: "Don't want these emails? ",
+    finalNote: 'This is the last email in this sequence.',
+    signoff: 'Sam Han',
+    signoffTitle: 'Founder, Top Uni',
+    footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
-    signoff: '— Sam @ Top Uni',
     subject: (n: string) => n ? `${n}, still thinking it over?` : 'Still thinking it over?',
+    tagline: 'Scholarship Strategy',
   },
   ru: {
     htmlLang: 'ru',
     preview: 'Ещё думаете? Один конкретный сценарий внутри.',
     headingNamed: (n: string) => `${n}, ещё думаете?`,
     headingNeutral: 'Ещё думаете?',
-    body: 'Большинство студентов используют Top Uni для одного из двух: найти стипендии, о которых не знали, или проверить список, который уже есть. С мастером — менее 10 минут.',
-    calNote: 'Если сначала хотите поговорить — запишитесь на 15-минутный звонок. Без питча, просто помощь.',
+    body: 'Большинство студентов используют Top Uni для одного из двух:',
+    bullets: [
+      'Найти стипендии, о которых не знали.',
+      'Проверить список, который уже есть.',
+    ],
+    bodyTwo: 'С мастером — менее десяти минут.',
+    calNote: 'Или если сначала хотите поговорить — запишитесь на 15-минутный звонок. Без питча, просто помощь.',
     ctaWizard: 'Открыть мастер',
     ctaCal: 'Записаться на звонок',
-    footerFinal: 'Это последнее письмо в этой серии.',
+    finalNote: 'Это последнее письмо в этой серии.',
+    signoff: 'Сэм Хан',
+    signoffTitle: 'Основатель, Top Uni',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
-    signoff: '— Сэм @ Top Uni',
     subject: (n: string) => n ? `${n}, ещё думаете?` : 'Ещё думаете?',
+    tagline: 'Стипендиальная Стратегия',
   },
 } as const
+
+const bulletText = { fontSize: '15px', color: '#2E3A55', lineHeight: '1.7', margin: '0 0 8px', paddingLeft: '16px' } as const
 
 const DripDay14Email = ({ name, wizardUrl = 'https://topuni.org/topuni-ai', calUrl, unsubscribeUrl, language = 'en' }: Props) => {
   const c = COPY[language === 'ru' ? 'ru' : 'en']
@@ -54,25 +71,47 @@ const DripDay14Email = ({ name, wizardUrl = 'https://topuni.org/topuni-ai', calU
     <Html lang={c.htmlLang} dir="ltr">
       <Head />
       <Preview>{c.preview}</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Heading style={h1}>{name ? c.headingNamed(name) : c.headingNeutral}</Heading>
-          <Text style={lead}>{c.body}</Text>
-          <Button href={wizardUrl} style={primaryBtn}>{c.ctaWizard}</Button>
-          {calUrl && (
-            <>
-              <Text style={calNote}>{c.calNote}</Text>
-              <Button href={calUrl} style={secondaryBtn}>{c.ctaCal}</Button>
-            </>
-          )}
-          <Hr style={hr} />
-          <Text style={footer}>{c.footerFinal}</Text>
-          {unsubscribeUrl && (
-            <Text style={footer}>
-              {c.footerPause}<a href={unsubscribeUrl} style={subtleLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
-            </Text>
-          )}
-          <Text style={footer}>{c.signoff}</Text>
+      <Body style={styles.page}>
+        <Container style={styles.container}>
+          <Section style={styles.masthead}>
+            <Text style={styles.wordmark}>Top Uni</Text>
+            <Text style={styles.tagline}>{c.tagline}</Text>
+          </Section>
+
+          <Section style={styles.card}>
+            <Heading as="h1" style={styles.h1}>
+              {name ? c.headingNamed(name) : c.headingNeutral}
+            </Heading>
+            <Hr style={styles.goldRule} />
+            <Text style={styles.body}>{c.body}</Text>
+            {c.bullets.map((b, i) => (
+              <Text key={i} style={bulletText}>· {b}</Text>
+            ))}
+            <Text style={{ ...styles.body, marginTop: '14px' }}>{c.bodyTwo}</Text>
+            <Section style={styles.ctaWrap}>
+              <Link href={wizardUrl} style={styles.ctaPrimary}>{c.ctaWizard}</Link>
+            </Section>
+            {calUrl && (
+              <>
+                <Text style={{ ...styles.bodySmall, marginTop: '24px' }}>{c.calNote}</Text>
+                <Section style={styles.ctaWrap}>
+                  <Link href={calUrl} style={styles.ctaSecondary}>{c.ctaCal}</Link>
+                </Section>
+              </>
+            )}
+            <Hr style={styles.divider} />
+            <Text style={styles.bodySmall}>{c.finalNote}</Text>
+            <Text style={styles.signoff}>{c.signoff}<br />{c.signoffTitle}</Text>
+          </Section>
+
+          <Section style={styles.footer}>
+            {unsubscribeUrl && (
+              <Text style={styles.footerLine}>
+                {c.footerPause}<a href={unsubscribeUrl} style={styles.footerLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
+              </Text>
+            )}
+            <Text style={styles.footerLine}>Top Uni · topuni.org</Text>
+          </Section>
         </Container>
       </Body>
     </Html>
@@ -94,14 +133,3 @@ export const template = {
     language: 'en',
   },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '32px 28px', maxWidth: '560px' }
-const h1 = { fontSize: '22px', fontWeight: 'bold', color: '#0a2540', margin: '0 0 14px', lineHeight: '1.3' }
-const lead = { fontSize: '15px', color: '#3c4858', lineHeight: '1.55', margin: '0 0 22px' }
-const calNote = { fontSize: '14px', color: '#3c4858', lineHeight: '1.5', margin: '16px 0 10px' }
-const primaryBtn = { backgroundColor: '#0a2540', color: '#ffffff', padding: '10px 22px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-block' }
-const secondaryBtn = { backgroundColor: '#ffffff', color: '#0a2540', padding: '10px 22px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', border: '1px solid #d0d7e0', display: 'inline-block' }
-const hr = { borderColor: '#e6ebf1', margin: '24px 0' }
-const subtleLink = { color: '#0a2540', textDecoration: 'underline' }
-const footer = { fontSize: '12px', color: '#8898aa', margin: '6px 0' }

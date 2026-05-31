@@ -1,9 +1,10 @@
 /// <reference types="npm:@types/react@18.3.1" />
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Button, Container, Head, Heading, Hr, Html, Preview, Text,
+  Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { styles } from './brand.ts'
 
 interface Props {
   name?: string
@@ -15,29 +16,31 @@ interface Props {
 const COPY = {
   en: {
     htmlLang: 'en',
-    preview: 'Your Top Uni strategy is ready to read.',
+    preview: 'Your Top Uni strategy is ready.',
     headingNamed: (n: string) => `${n}, your strategy is ready.`,
-    headingNeutral: 'Your Top Uni strategy is ready.',
-    body: 'Open it now — your personalized scholarship strategy, scholarship shortlist, and first action step are inside.',
-    cta: 'Read my strategy',
-    footerPause: "Don't want these emails? ",
+    headingNeutral: 'Your strategy is ready.',
+    body: 'Personalized scholarship strategy, shortlist, and the first action step are inside.',
+    cta: 'Open my strategy',
+    signoff: 'Top Uni',
+    footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
-    signoff: '— The Top Uni Team',
     subject: (n: string) => n ? `${n}, your Top Uni strategy is ready` : 'Your Top Uni strategy is ready',
+    tagline: 'Scholarship Strategy',
   },
   ru: {
     htmlLang: 'ru',
-    preview: 'Ваша стратегия Top Uni готова к прочтению.',
+    preview: 'Ваша стратегия Top Uni готова.',
     headingNamed: (n: string) => `${n}, ваша стратегия готова.`,
-    headingNeutral: 'Ваша стратегия Top Uni готова.',
-    body: 'Откройте — внутри персональная стратегия стипендий, шорт-лист и первый шаг.',
-    cta: 'Читать стратегию',
+    headingNeutral: 'Ваша стратегия готова.',
+    body: 'Внутри персональная стратегия стипендий, шорт-лист и первый шаг.',
+    cta: 'Открыть стратегию',
+    signoff: 'Top Uni',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
-    signoff: '— Команда Top Uni',
     subject: (n: string) => n ? `${n}, ваша стратегия Top Uni готова` : 'Ваша стратегия Top Uni готова',
+    tagline: 'Стипендиальная Стратегия',
   },
 } as const
 
@@ -47,18 +50,33 @@ const StrategyReportReadyEmail = ({ name, reportUrl, unsubscribeUrl, language = 
     <Html lang={c.htmlLang} dir="ltr">
       <Head />
       <Preview>{c.preview}</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Heading style={h1}>{name ? c.headingNamed(name) : c.headingNeutral}</Heading>
-          <Text style={lead}>{c.body}</Text>
-          <Button href={reportUrl} style={primaryBtn}>{c.cta}</Button>
-          <Hr style={hr} />
-          {unsubscribeUrl && (
-            <Text style={footer}>
-              {c.footerPause}<a href={unsubscribeUrl} style={subtleLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
-            </Text>
-          )}
-          <Text style={footer}>{c.signoff}</Text>
+      <Body style={styles.page}>
+        <Container style={styles.container}>
+          <Section style={styles.masthead}>
+            <Text style={styles.wordmark}>Top Uni</Text>
+            <Text style={styles.tagline}>{c.tagline}</Text>
+          </Section>
+
+          <Section style={styles.card}>
+            <Heading as="h1" style={styles.h1}>
+              {name ? c.headingNamed(name) : c.headingNeutral}
+            </Heading>
+            <Hr style={styles.goldRule} />
+            <Text style={styles.body}>{c.body}</Text>
+            <Section style={styles.ctaWrap}>
+              <Link href={reportUrl} style={styles.ctaPrimary}>{c.cta}</Link>
+            </Section>
+            <Text style={styles.signoff}>— {c.signoff}</Text>
+          </Section>
+
+          <Section style={styles.footer}>
+            {unsubscribeUrl && (
+              <Text style={styles.footerLine}>
+                {c.footerPause}<a href={unsubscribeUrl} style={styles.footerLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
+              </Text>
+            )}
+            <Text style={styles.footerLine}>Top Uni · topuni.org</Text>
+          </Section>
         </Container>
       </Body>
     </Html>
@@ -79,12 +97,3 @@ export const template = {
     language: 'en',
   },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '32px 28px', maxWidth: '560px' }
-const h1 = { fontSize: '22px', fontWeight: 'bold', color: '#0a2540', margin: '0 0 14px', lineHeight: '1.3' }
-const lead = { fontSize: '15px', color: '#3c4858', lineHeight: '1.55', margin: '0 0 22px' }
-const primaryBtn = { backgroundColor: '#0a2540', color: '#ffffff', padding: '10px 22px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-block' }
-const hr = { borderColor: '#e6ebf1', margin: '24px 0' }
-const subtleLink = { color: '#0a2540', textDecoration: 'underline' }
-const footer = { fontSize: '12px', color: '#8898aa', margin: '6px 0' }

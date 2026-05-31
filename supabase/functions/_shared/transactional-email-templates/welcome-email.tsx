@@ -1,9 +1,10 @@
 /// <reference types="npm:@types/react@18.3.1" />
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Button, Container, Head, Heading, Hr, Html, Preview, Text,
+  Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { styles } from './brand.ts'
 
 interface Props {
   name?: string
@@ -15,31 +16,37 @@ interface Props {
 const COPY = {
   en: {
     htmlLang: 'en',
-    preview: 'One thing to do right now: start the 3-step wizard.',
+    preview: 'One thing to do right now — start the 3-step wizard.',
     headingNamed: (n: string) => `Welcome, ${n}.`,
     headingNeutral: 'Welcome to Top Uni.',
-    lead: 'Top Uni is a scholarship search engine and AI strategy tool for international students. Start the 3-step wizard — it takes 4 minutes and produces a personalized scholarship strategy.',
-    expectations: 'We email you when something requires your attention. Nothing else.',
-    cta: 'Start the wizard',
-    footerPause: "Don't want these emails? ",
+    lead: 'Top Uni is the scholarship search engine and AI strategy tool for international students. Your personalized strategy is four minutes away.',
+    note: 'The wizard asks three questions. The output is a concrete scholarship shortlist and the first action step — not generic advice.',
+    cta: 'Start your strategy',
+    expectations: 'We only email when something requires your attention.',
+    footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
-    signoff: '— Sam @ Top Uni',
-    subject: (n: string) => n ? `Welcome, ${n}` : 'Welcome to Top Uni',
+    signoff: 'Sam Han',
+    signoffTitle: 'Founder, Top Uni',
+    subject: (n: string) => n ? `Welcome to Top Uni, ${n}` : 'Welcome to Top Uni',
+    tagline: 'Scholarship Strategy',
   },
   ru: {
     htmlLang: 'ru',
-    preview: 'Одно действие прямо сейчас: запустить 3-шаговый мастер.',
+    preview: 'Одно действие прямо сейчас — запустить 3-шаговый мастер.',
     headingNamed: (n: string) => `Добро пожаловать, ${n}.`,
     headingNeutral: 'Добро пожаловать в Top Uni.',
-    lead: 'Top Uni — поисковик стипендий и инструмент AI-стратегии для иностранных студентов. Запустите 3-шаговый мастер — 4 минуты, персональная стратегия на выходе.',
-    expectations: 'Мы пишем только когда требуется ваше внимание. Больше ничего.',
-    cta: 'Начать',
+    lead: 'Top Uni — поисковик стипендий и инструмент AI-стратегии для иностранных студентов. Ваша персональная стратегия — в четырёх минутах.',
+    note: 'Мастер задаёт три вопроса. Результат — конкретный шорт-лист стипендий и первый шаг. Без общих советов.',
+    cta: 'Начать стратегию',
+    expectations: 'Мы пишем только когда требуется ваше внимание.',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
-    signoff: '— Сэм @ Top Uni',
-    subject: (n: string) => n ? `Добро пожаловать, ${n}` : 'Добро пожаловать в Top Uni',
+    signoff: 'Сэм Хан',
+    signoffTitle: 'Основатель, Top Uni',
+    subject: (n: string) => n ? `Добро пожаловать в Top Uni, ${n}` : 'Добро пожаловать в Top Uni',
+    tagline: 'Стипендиальная Стратегия',
   },
 } as const
 
@@ -49,19 +56,36 @@ const WelcomeEmail = ({ name, wizardUrl = 'https://topuni.org/topuni-ai', unsubs
     <Html lang={c.htmlLang} dir="ltr">
       <Head />
       <Preview>{c.preview}</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Heading style={h1}>{name ? c.headingNamed(name) : c.headingNeutral}</Heading>
-          <Text style={lead}>{c.lead}</Text>
-          <Button href={wizardUrl} style={primaryBtn}>{c.cta}</Button>
-          <Hr style={hr} />
-          <Text style={footer}>{c.expectations}</Text>
-          {unsubscribeUrl && (
-            <Text style={footer}>
-              {c.footerPause}<a href={unsubscribeUrl} style={subtleLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
-            </Text>
-          )}
-          <Text style={footer}>{c.signoff}</Text>
+      <Body style={styles.page}>
+        <Container style={styles.container}>
+          <Section style={styles.masthead}>
+            <Text style={styles.wordmark}>Top Uni</Text>
+            <Text style={styles.tagline}>{c.tagline}</Text>
+          </Section>
+
+          <Section style={styles.card}>
+            <Heading as="h1" style={styles.h1}>
+              {name ? c.headingNamed(name) : c.headingNeutral}
+            </Heading>
+            <Hr style={styles.goldRule} />
+            <Text style={styles.body}>{c.lead}</Text>
+            <Text style={styles.noteHighlight}>{c.note}</Text>
+            <Section style={styles.ctaWrap}>
+              <Link href={wizardUrl} style={styles.ctaPrimary}>{c.cta}</Link>
+            </Section>
+            <Hr style={styles.divider} />
+            <Text style={styles.bodySmall}>{c.expectations}</Text>
+            <Text style={styles.signoff}>{c.signoff}<br />{c.signoffTitle}</Text>
+          </Section>
+
+          <Section style={styles.footer}>
+            {unsubscribeUrl && (
+              <Text style={styles.footerLine}>
+                {c.footerPause}<a href={unsubscribeUrl} style={styles.footerLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
+              </Text>
+            )}
+            <Text style={styles.footerLine}>Top Uni · topuni.org</Text>
+          </Section>
         </Container>
       </Body>
     </Html>
@@ -82,12 +106,3 @@ export const template = {
     language: 'en',
   },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '32px 28px', maxWidth: '560px' }
-const h1 = { fontSize: '22px', fontWeight: 'bold', color: '#0a2540', margin: '0 0 14px', lineHeight: '1.3' }
-const lead = { fontSize: '15px', color: '#3c4858', lineHeight: '1.55', margin: '0 0 22px' }
-const primaryBtn = { backgroundColor: '#0a2540', color: '#ffffff', padding: '10px 22px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-block' }
-const hr = { borderColor: '#e6ebf1', margin: '24px 0' }
-const subtleLink = { color: '#0a2540', textDecoration: 'underline' }
-const footer = { fontSize: '12px', color: '#8898aa', margin: '6px 0' }

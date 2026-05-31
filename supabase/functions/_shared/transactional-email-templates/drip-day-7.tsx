@@ -1,9 +1,10 @@
 /// <reference types="npm:@types/react@18.3.1" />
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Button, Container, Head, Heading, Hr, Html, Preview, Text,
+  Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { styles } from './brand.ts'
 
 interface Props {
   name?: string
@@ -16,28 +17,34 @@ const COPY = {
   en: {
     htmlLang: 'en',
     preview: "What's getting in the way of your scholarship strategy?",
-    headingNamed: (n: string) => `${n}, quick question.`,
-    headingNeutral: 'Quick question.',
-    body: "You signed up for Top Uni last week but haven't run the wizard yet. What's blocking you? The wizard takes 4 minutes and the output is a concrete scholarship shortlist — not generic advice.",
-    cta: 'Start the wizard',
-    footerPause: "Don't want these emails? ",
+    headingNamed: (n: string) => `${n}, a quick question.`,
+    headingNeutral: 'A quick question.',
+    body: "You created your Top Uni account a week ago but haven't run the wizard yet.",
+    bodyTwo: 'What\'s blocking you? Four minutes, three questions, a concrete shortlist on the other side.',
+    cta: 'Run the wizard',
+    signoff: 'Sam Han',
+    signoffTitle: 'Founder, Top Uni',
+    footerPause: "Don't want these? ",
     footerPauseLink: 'Unsubscribe',
     footerPauseSuffix: '.',
-    signoff: '— Sam @ Top Uni',
-    subject: (n: string) => n ? `${n}, quick question about your application strategy` : 'Quick question about your application strategy',
+    subject: (n: string) => n ? `${n}, a quick question` : 'A quick question about your application strategy',
+    tagline: 'Scholarship Strategy',
   },
   ru: {
     htmlLang: 'ru',
     preview: 'Что мешает начать работу над стратегией стипендий?',
     headingNamed: (n: string) => `${n}, быстрый вопрос.`,
     headingNeutral: 'Быстрый вопрос.',
-    body: 'Вы зарегистрировались в Top Uni на прошлой неделе, но ещё не запустили мастер. Что мешает? Мастер занимает 4 минуты, результат — конкретный шорт-лист стипендий, без общих советов.',
+    body: 'Вы создали аккаунт Top Uni неделю назад, но ещё не запустили мастер.',
+    bodyTwo: 'Что мешает? Четыре минуты, три вопроса — на выходе конкретный шорт-лист.',
     cta: 'Запустить мастер',
+    signoff: 'Сэм Хан',
+    signoffTitle: 'Основатель, Top Uni',
     footerPause: 'Не нужны такие письма? ',
     footerPauseLink: 'Отписаться',
     footerPauseSuffix: '.',
-    signoff: '— Сэм @ Top Uni',
-    subject: (n: string) => n ? `${n}, быстрый вопрос о вашей стратегии` : 'Быстрый вопрос о вашей стратегии',
+    subject: (n: string) => n ? `${n}, быстрый вопрос` : 'Быстрый вопрос о вашей стратегии',
+    tagline: 'Стипендиальная Стратегия',
   },
 } as const
 
@@ -47,18 +54,34 @@ const DripDay7Email = ({ name, wizardUrl = 'https://topuni.org/topuni-ai', unsub
     <Html lang={c.htmlLang} dir="ltr">
       <Head />
       <Preview>{c.preview}</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Heading style={h1}>{name ? c.headingNamed(name) : c.headingNeutral}</Heading>
-          <Text style={lead}>{c.body}</Text>
-          <Button href={wizardUrl} style={primaryBtn}>{c.cta}</Button>
-          <Hr style={hr} />
-          {unsubscribeUrl && (
-            <Text style={footer}>
-              {c.footerPause}<a href={unsubscribeUrl} style={subtleLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
-            </Text>
-          )}
-          <Text style={footer}>{c.signoff}</Text>
+      <Body style={styles.page}>
+        <Container style={styles.container}>
+          <Section style={styles.masthead}>
+            <Text style={styles.wordmark}>Top Uni</Text>
+            <Text style={styles.tagline}>{c.tagline}</Text>
+          </Section>
+
+          <Section style={styles.card}>
+            <Heading as="h1" style={styles.h1}>
+              {name ? c.headingNamed(name) : c.headingNeutral}
+            </Heading>
+            <Hr style={styles.goldRule} />
+            <Text style={styles.body}>{c.body}</Text>
+            <Text style={styles.body}>{c.bodyTwo}</Text>
+            <Section style={styles.ctaWrap}>
+              <Link href={wizardUrl} style={styles.ctaPrimary}>{c.cta}</Link>
+            </Section>
+            <Text style={styles.signoff}>{c.signoff}<br />{c.signoffTitle}</Text>
+          </Section>
+
+          <Section style={styles.footer}>
+            {unsubscribeUrl && (
+              <Text style={styles.footerLine}>
+                {c.footerPause}<a href={unsubscribeUrl} style={styles.footerLink}>{c.footerPauseLink}</a>{c.footerPauseSuffix}
+              </Text>
+            )}
+            <Text style={styles.footerLine}>Top Uni · topuni.org</Text>
+          </Section>
         </Container>
       </Body>
     </Html>
@@ -79,12 +102,3 @@ export const template = {
     language: 'en',
   },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '32px 28px', maxWidth: '560px' }
-const h1 = { fontSize: '22px', fontWeight: 'bold', color: '#0a2540', margin: '0 0 14px', lineHeight: '1.3' }
-const lead = { fontSize: '15px', color: '#3c4858', lineHeight: '1.55', margin: '0 0 22px' }
-const primaryBtn = { backgroundColor: '#0a2540', color: '#ffffff', padding: '10px 22px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-block' }
-const hr = { borderColor: '#e6ebf1', margin: '24px 0' }
-const subtleLink = { color: '#0a2540', textDecoration: 'underline' }
-const footer = { fontSize: '12px', color: '#8898aa', margin: '6px 0' }
